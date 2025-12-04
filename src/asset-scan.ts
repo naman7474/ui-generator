@@ -653,9 +653,27 @@ export const injectAssetsIntoHtml = async (
   }
 
   const injection = linkLines.join('\n    ');
+  // Build and inject an inline Asset Manifest for runtime/code consumption
+  // Map remote URLs -> local relative paths (prefixed with ./)
+  const imgMap: Record<string, string> = {};
+  for (const im of scan.assets.images) {
+    // normalize slashes
+    imgMap[im.url] = `./${im.localPath.replace(/\\/g, '/')}`;
+  }
+  const fontMap: Record<string, string> = {};
+  for (const f of scan.assets.fonts) {
+    fontMap[f.url] = `./${f.localPath.replace(/\\/g, '/')}`;
+  }
+  const manifest = {
+    images: imgMap,
+    fonts: fontMap,
+    icons: [] as string[],
+  } as const;
+  const manifestScript = `<script ${injectionId}>window.__ASSET_MANIFEST__ = ${JSON.stringify(manifest)};<\/script>`;
+
   const newHtml = headEndIdx >= 0
-    ? `${html.slice(0, headEndIdx)}    ${injection}\n${html.slice(headEndIdx)}`
-    : `${injection}\n${html}`;
+    ? `${html.slice(0, headEndIdx)}    ${injection}\n    ${manifestScript}\n${html.slice(headEndIdx)}`
+    : `${injection}\n${manifestScript}\n${html}`;
   await fs.writeFile(entryHtmlPath, newHtml, 'utf8');
 };
 

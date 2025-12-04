@@ -216,13 +216,17 @@ const fixBareReactImports = (code: string): string => {
     const target = 'es2018';
     const reactUrl = dev ? `https://esm.sh/react@18?dev&target=${target}` : `https://esm.sh/react@18?target=${target}`;
     const rdomUrl = dev ? `https://esm.sh/react-dom@18/client?dev&target=${target}` : `https://esm.sh/react-dom@18/client?target=${target}`;
-    const lucideUrl = dev ? `https://esm.sh/lucide-react?dev&target=${target}` : `https://esm.sh/lucide-react?target=${target}`;
+    // Pin lucide-react to use the same React/ReactDOM deps and target to avoid duplicate React copies at runtime
+    const lucideUrl = dev
+        ? `https://esm.sh/lucide-react@0.555.0?deps=react@18,react-dom@18&dev&target=${target}`
+        : `https://esm.sh/lucide-react@0.555.0?deps=react@18,react-dom@18&target=${target}`;
     let out = code.replace(/from\s+['\"]react-dom\/client['\"]/g, `from '${rdomUrl}'`);
     out = out.replace(/from\s+['\"]react['\"]/g, `from '${reactUrl}'`);
     out = out.replace(/from\s+['\"]lucide-react['\"]/g, `from '${lucideUrl}'`);
     // Normalize any esm.sh CDN entries to include target as well
     out = out.replace(/from\s+['\"]https:\/\/esm\.sh\/react(@[^'"\s]*)?(\?[^'"\s]*)?['\"]/g, (_m) => `from '${reactUrl}'`);
-    out = out.replace(/from\s+['\"]https:\/\/esm\.sh\/react-dom(@[^'"\s]*)?\/client(\?[^'"\s]*)?['\"]/g, (_m) => `from '${rdomUrl}'`);
+    // Any react-dom import (with or without /client, or deep es modules) -> canonical client
+    out = out.replace(/from\s+['\"]https:\/\/esm\.sh\/react-dom[^'"\s]*['\"]/g, (_m) => `from '${rdomUrl}'`);
     out = out.replace(/from\s+['\"]https:\/\/esm\.sh\/lucide-react(@[^'"\s]*)?(\?[^'"\s]*)?['\"]/g, (_m) => `from '${lucideUrl}'`);
     return out;
 };
@@ -268,6 +272,74 @@ const fixInvalidJsxChildren = (code: string): string => {
     let out = code;
     // Replace child object literal patterns with inner expression
     out = out.replace(/>(\s*)\{\s*\{([\s\S]*?)\}\s*\}(\s*)</g, '>$1{$2}$3<');
+    return out;
+};
+
+// Heuristic fix: if icons are mistakenly imported from react-dom or react-dom/client, move them to lucide-react
+// Example: import { ChevronRight } from 'react-dom/client' -> import { ChevronRight } from 'lucide-react'
+const fixIconMisimportsFromReactDom = (code: string): string => {
+    let out = code;
+    type Match = { full: string; hasDefault: boolean; defIdent?: string; names: string; q: string; spec: string; start: number; end: number };
+
+    const matches: Match[] = [];
+    const isReactDomSpec = (s: string) => /react-dom(\b|\/)/i.test(s);
+    const reDefaultAndNamed = /import\s+([A-Za-z_$][\w$]*)\s*,\s*{\s*([^}]+?)\s*}\s*from\s*(["'])([^"']+?)\3\s*;?/g;
+    const reNamedOnly = /import\s*{\s*([^}]+?)\s*}\s*from\s*(["'])([^"']+?)\2\s*;?/g;
+
+    const collect = (regex: RegExp, hasDefault: boolean) => {
+        let m: RegExpExecArray | null;
+        while ((m = regex.exec(out)) !== null) {
+            const def = hasDefault ? m[1] : undefined;
+            const names = hasDefault ? m[2] : m[1];
+            const q = hasDefault ? m[3] : m[2];
+            const spec = hasDefault ? m[4] : m[3];
+            if (!isReactDomSpec(spec)) continue;
+            matches.push({ full: m[0], hasDefault, defIdent: def, names, q, spec, start: m.index, end: m.index + m[0].length });
+        }
+    };
+
+    collect(reDefaultAndNamed, true);
+    collect(reNamedOnly, false);
+
+    if (!matches.length) return out;
+    matches.sort((a,b) => b.start - a.start);
+
+    for (const m of matches) {
+        const parts = m.names.split(',').map(s => s.trim()).filter(Boolean);
+        const keep: string[] = [];
+        const toIcons: string[] = [];
+        for (const p of parts) {
+            // Treat any PascalCase as icon candidate; react-dom exports are camelCase
+            const name = p.replace(/\sas\s+[A-Za-z_$][\w$]*$/,'').trim();
+            if (/^[A-Z]/.test(name)) toIcons.push(p); else keep.push(p);
+        }
+        if (!toIcons.length) continue;
+
+        let replacement = '';
+        if (m.hasDefault && keep.length) {
+            replacement = `import ${m.defIdent}, { ${keep.join(', ')} } from ${m.q}${m.spec}${m.q};`;
+        } else if (m.hasDefault && !keep.length) {
+            replacement = `import ${m.defIdent} from ${m.q}${m.spec}${m.q};`;
+        } else if (!m.hasDefault && keep.length) {
+            replacement = `import { ${keep.join(', ')} } from ${m.q}${m.spec}${m.q};`;
+        }
+        out = out.slice(0, m.start) + (replacement ? replacement + '\n' : '') + out.slice(m.end);
+
+        // Merge or add lucide-react import
+        const lucideRe = /(^|\n)\s*import\s*{\s*([^}]*?)\s*}\s*from\s*(["'])([^"']*lucide-react[^"']*)\3\s*;?/;
+        const m2 = out.match(lucideRe);
+        const icons = toIcons.map(s => s.trim());
+        if (m2) {
+            const before = m2[0];
+            const currentNames = m2[2].split(',').map(s => s.trim()).filter(Boolean);
+            const merged = Array.from(new Set([...currentNames, ...icons]));
+            const after = `${m2[1]}import { ${merged.join(', ')} } from ${m2[3]}${m2[4]}${m2[3]};`;
+            out = out.replace(before, after);
+        } else {
+            out = `import { ${icons.join(', ')} } from 'lucide-react';\n` + out;
+        }
+    }
+
     return out;
 };
 
@@ -516,8 +588,8 @@ const SCAFFOLD_INDEX_HTML = `<!DOCTYPE html>
   </body>
 </html>`;
 
-const SCAFFOLD_MAIN_JSX = `import React from 'https://esm.sh/react@18';
-import ReactDOM from 'https://esm.sh/react-dom@18/client';
+const SCAFFOLD_MAIN_JSX = `import React from 'https://esm.sh/react@18?dev&target=es2018';
+import ReactDOM from 'https://esm.sh/react-dom@18/client?dev&target=es2018';
 import App from './App.js';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -562,9 +634,11 @@ export const writeReactBundle = async (
             addDevParamToReactCdn(
                 fixBareReactImports(
                     fixIconMisimportsFromReact(
-                        fixReactDomClientImport(
-                            fixInvalidJsxChildren(
-                                fixLucideIconChildren(content)
+                        fixIconMisimportsFromReactDom(
+                            fixReactDomClientImport(
+                                fixInvalidJsxChildren(
+                                    fixLucideIconChildren(content)
+                                )
                             )
                         )
                     )
@@ -592,9 +666,14 @@ export const writeReactBundle = async (
                     addDevParamToReactCdn(
                         fixBareReactImports(
                             fixIconMisimportsFromReact(
-                                fixReactDomClientImport(
-                                    fixInvalidJsxChildren(
-                                        fixLucideIconChildren(result.code)
+                                fixIconMisimportsFromReactDom(
+                                    fixReactDomClientImport(
+                                        fixInvalidJsxChildren(
+                                            // Also fix root-relative quoted paths inside JS/JSX output
+                                            rewriteRootRelativeToRelative(
+                                                fixLucideIconChildren(result.code)
+                                            )
+                                        )
                                     )
                                 )
                             )
@@ -632,9 +711,14 @@ export const writeReactBundle = async (
                     addDevParamToReactCdn(
                         fixBareReactImports(
                             fixIconMisimportsFromReact(
-                                fixReactDomClientImport(
-                                    fixInvalidJsxChildren(
-                                        fixLucideIconChildren(result.code)
+                                fixIconMisimportsFromReactDom(
+                                    fixReactDomClientImport(
+                                        fixInvalidJsxChildren(
+                                            // Also fix root-relative quoted paths inside JS output
+                                            rewriteRootRelativeToRelative(
+                                                fixLucideIconChildren(result.code)
+                                            )
+                                        )
                                     )
                                 )
                             )
@@ -658,8 +742,7 @@ export const writeReactBundle = async (
                 }
                 await fs.writeFile(shimPath, shimLines.join('\n'));
             }
-            // Replace lucide-react with local stubs to eliminate React child/runtime compatibility issues
-            content = await rewriteLucideImportsToLocal(content, path.dirname(targetPath));
+            // Do NOT replace lucide-react with local stubs; keep real lucide-react via CDN
         }
 
         await fs.mkdir(path.dirname(targetPath), { recursive: true });

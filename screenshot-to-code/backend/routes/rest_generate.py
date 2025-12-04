@@ -35,6 +35,29 @@ class ReactBundle(BaseModel):
     entry: str
     files: List[Dict[str, str]]
 
+class GeneratedStructure(BaseModel):
+    html: str
+    imageSlots: List[Dict[str, Any]] = []
+    iconSlots: List[Dict[str, Any]] = []
+
+class SectionAssets(BaseModel):
+    images: List[Dict[str, Any]] = []
+    icons: List[str] = []
+
+class SectionTextContent(BaseModel):
+    headings: List[str] = []
+    paragraphs: List[str] = []
+    buttons: List[str] = []
+
+class SectionGenerationRequest(BaseModel):
+    sectionName: str
+    sectionType: str
+    baseScreenshot: str  # data URL (cropped)
+    assets: SectionAssets
+    textContent: SectionTextContent
+    layoutHint: Optional[str] = None
+    model: Optional[str] = Llm.GEMINI_3_0_PRO_PREVIEW.value
+
 SYSTEM_PROMPT = """
 You are an expert frontend developer specialized in EXACT visual replication.
 
@@ -74,9 +97,19 @@ IMPORTANT:
 4. Match border radius and shadows
 
 ### Images
-- Use section_specs images when provided: `./assets/images/[filename]`
-- Otherwise use: `https://placehold.co/WIDTHxHEIGHT`
-- Include meaningful alt text
+1. NEVER use placeholder URLs (placehold.co, via.placeholder.com, etc.)
+2. ALWAYS use section_specs images when provided. Use the exact local path from section_specs: `./assets/images/[filename]`.
+3. If both `localPath` and `url` are present, use `localPath` with a leading `./`. Do NOT use remote URLs.
+4. Include meaningful alt text.
+
+### Icons
+1. Import icons from 'lucide-react' ONLY: `import { IconName } from 'lucide-react'`
+2. DO NOT import icons from 'react', 'react-dom', or 'react-dom/client'. Named symbols like `ChevronRight`, `ShoppingCart`, etc. are NOT exported by React/ReactDOM. They come from `lucide-react`.
+3. Use icons as JSX elements: `<IconName className="..." />`
+4. Do NOT create custom SVG placeholders for icons.
+
+### Fonts
+1. Use system fonts or the fonts provided via section_specs. Do NOT add Google Fonts links.
 
 ### Content
 - Use EXACT text from the screenshot
@@ -92,7 +125,7 @@ IMPORTANT:
 When section_specs is provided, for EACH section:
 1. Create a component with `data-section={section.name}`
 2. Use the layout hint: grid → CSS Grid, flex-row → flexbox row, flex-col → flexbox column
-3. Use section.images for img src attributes
+3. For img src attributes, use `images[].localPath` with a leading `./` (strict). Do not use remote URLs.
 4. Use section.textContent for headings and text
 5. Apply section.backgroundColor and section.padding
 """
@@ -285,6 +318,26 @@ def _sanitize_json_string_literals(s: str) -> str:
         out.append('\\')
     return ''.join(out)
 
+STRUCTURE_SYSTEM_PROMPT = """
+You are an expert UI engineer. Phase 1: return only a STRUCTURAL HTML skeleton with placeholder tokens.
+
+Return a JSON object:
+{
+  "html": "...HTML string...",
+  "imageSlots": [ { "id": "{IMAGE_SLOT_1}", "description": "hero image", "dimensions": {"w": 1200, "h": 600} } ],
+  "iconSlots": [ { "id": "{ICON_SLOT_1}", "name": "ShoppingCart" } ]
+}
+
+Rules:
+- The HTML string should be a single-page markup of the page structure (header, hero, features, footer, etc.).
+- Use CLEAR placeholder tokens inside the HTML where images/icons will go:
+  - Use tokens like {IMAGE_SLOT_1}, {IMAGE_SLOT_2} for images
+  - Use tokens like {ICON_SLOT_1}, {ICON_SLOT_2} for icons
+- Keep layout and spacing via Tailwind utility classes (class attributes allowed in the HTML string).
+- Do not include external fonts or placeholders; actual assets will be injected later.
+- Do not include script tags.
+"""
+
 async def generate_bundle(messages: List[Any], model: str) -> ReactBundle:
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY not set")
@@ -442,6 +495,92 @@ async def generate_bundle(messages: List[Any], model: str) -> ReactBundle:
     snippet = cleaned[:800]
     raise HTTPException(status_code=500, detail=f"Failed to parse JSON bundle from model output. Length: {len(cleaned)}. Snippet: {snippet}")
 
+async def generate_structure(messages: List[Any], model: str) -> GeneratedStructure:
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not set")
+
+    preferred_order = [
+        Llm.GEMINI_3_0_PRO_PREVIEW.value,
+        Llm.GEMINI_2_5_PRO.value,
+        Llm.GEMINI_2_5_FLASH.value,
+        Llm.GEMINI_2_5_FLASH_LITE.value,
+    ]
+    candidates: List[str] = []
+    if model and model not in candidates:
+        candidates.append(model)
+    for m in preferred_order:
+        if m not in candidates:
+            candidates.append(m)
+
+    last_error: Optional[Exception] = None
+    full_response = ""
+
+    structure_schema = gtypes.Schema(
+        type=gtypes.Type.OBJECT,
+        required=["html"],
+        properties={
+            "html": gtypes.Schema(type=gtypes.Type.STRING),
+            "imageSlots": gtypes.Schema(
+                type=gtypes.Type.ARRAY,
+                items=gtypes.Schema(type=gtypes.Type.OBJECT),
+            ),
+            "iconSlots": gtypes.Schema(
+                type=gtypes.Type.ARRAY,
+                items=gtypes.Schema(type=gtypes.Type.OBJECT),
+            ),
+        }
+    )
+
+    def _parse(text: str) -> Optional[GeneratedStructure]:
+        cleaned = text.strip()
+        if len(cleaned) > 500_000:
+            cleaned = cleaned[:500_000]
+        start_sentinel = "###_JSON_START_###"; end_sentinel = "###_JSON_END_###"
+        start_idx = cleaned.find(start_sentinel)
+        end_idx = cleaned.find(end_sentinel)
+        json_str = ""
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            candidate = cleaned[start_idx + len(start_sentinel):end_idx]
+            candidate = _strip_code_fences(candidate)
+            json_str = (_extract_balanced_json(candidate, 0) or candidate).strip()
+        else:
+            cleaned2 = _strip_code_fences(cleaned)
+            json_str = (_extract_balanced_json(cleaned2, 0) or cleaned2).strip()
+        pre = _sanitize_json_string_literals(_remove_json_comments_and_trailing_commas(json_str))
+        try:
+            data = json.loads(pre)
+            return GeneratedStructure(**data)
+        except Exception:
+            return None
+
+    for model_name in candidates:
+        try:
+            full_response = ""
+            async def callback(chunk: str):
+                nonlocal full_response
+                full_response += chunk
+            await stream_gemini_response(
+                messages=messages,
+                api_key=GEMINI_API_KEY,
+                callback=callback,
+                model_name=model_name,
+                response_mime_type="application/json",
+                response_schema=structure_schema,
+            )
+            s = _parse(full_response)
+            if s is not None:
+                return s
+        except ClientError as e:
+            if 'NOT_FOUND' in str(e) or 'is not found' in str(e):
+                last_error = e
+                continue
+            last_error = e
+        except Exception as e:
+            last_error = e
+            continue
+    snippet = (full_response or '')[:800]
+    raise HTTPException(status_code=500, detail=f"Failed to parse structure JSON. Snippet: {snippet}")
+
 @router.post("/api/generate-from-image")
 async def generate_from_image(req: GenerateRequest):
     # Send the prompt as system instruction and the image + request as user content
@@ -467,7 +606,7 @@ Use these specifications to structure your output:
 For each section:
 1. Add `data-section="{{name}}"` to the section container
 2. Use the exact `layoutHint` for CSS layout
-3. Use images from `images[].localPath` or `images[].url`
+3. CRITICAL: For images, use ONLY `images[].localPath` with a leading `./` (e.g., `./assets/images/abc.png`). Do NOT use remote URLs and do NOT use placeholders.
 4. Apply `backgroundColor` and `padding` if specified
 """
         })
@@ -475,6 +614,101 @@ For each section:
 
     bundle = await generate_bundle(messages, req.model)
     return {"bundle": bundle.dict(), "model": req.model}
+
+class GenerateStructureRequest(BaseModel):
+    image: str
+    model: Optional[str] = Llm.GEMINI_3_0_PRO_PREVIEW.value
+    history: Optional[List[Dict[str, Any]]] = []
+    sectionSpecs: Optional[List[Dict[str, Any]]] = None
+
+@router.post("/api/generate-structure")
+async def generate_structure_api(req: GenerateStructureRequest):
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not set")
+    messages: List[Dict[str, Any]] = [{"role": "system", "content": STRUCTURE_SYSTEM_PROMPT}]
+    if req.history:
+        messages.extend(req.history)
+    content: List[Dict[str, Any]] = [
+        {"type": "image_url", "image_url": {"url": req.image}},
+        {"type": "text", "text": "Return the structural HTML and slots as specified."}
+    ]
+    if req.sectionSpecs:
+        content.append({
+            "type": "text",
+            "text": f"Use the sections order and hints.\n```json\n{json.dumps(req.sectionSpecs, indent=2)}\n```"
+        })
+    messages.append({"role": "user", "content": content})
+    s = await generate_structure(messages, req.model)
+    return {"structure": s.dict(), "model": req.model}
+
+SECTION_SYSTEM_PROMPT = """
+You are an expert UI engineer. Generate a single SECTION as HTML string using Tailwind classes.
+
+Return a JSON object:
+{
+  "html": "...", 
+  "imageSlots": [ { "id": "{IMAGE_SLOT_1}", "description": "hero", "dimensions": {"w": 1200, "h": 600} } ],
+  "iconSlots": [ { "id": "{ICON_SLOT_1}", "name": "ShoppingCart" } ]
+}
+
+Rules:
+- The HTML root element must include data-section="<SectionName>".
+- Use the provided text content (headings, paragraphs, buttons) exactly.
+- Use the provided layout hint (grid, columns, full-width, standard) to structure the section.
+- For images, place tokens like {IMAGE_SLOT_1}, {IMAGE_SLOT_2} in the appropriate <img src> or CSS background positions. Do NOT inline any URLs.
+- For icons, place tokens like {ICON_SLOT_1} where icons should appear; we will replace these with actual lucide-react icons client-side.
+- Do not include <script> tags. The string must be valid HTML markup.
+"""
+
+@router.post("/api/generate-section")
+async def generate_section_api(req: SectionGenerationRequest):
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not set")
+    messages: List[Dict[str, Any]] = [{"role": "system", "content": SECTION_SYSTEM_PROMPT}]
+    content: List[Dict[str, Any]] = [
+        {"type": "text", "text": f"Section: {req.sectionName} ({req.sectionType})"},
+        {"type": "image_url", "image_url": {"url": req.baseScreenshot}},
+        {"type": "text", "text": f"Layout hint: {req.layoutHint or 'standard'}"},
+        {"type": "text", "text": f"Text content: {json.dumps(req.textContent.dict(), ensure_ascii=False)}"},
+        {"type": "text", "text": f"Assets: {json.dumps(req.assets.dict(), ensure_ascii=False)}"}
+    ]
+    messages.append({"role": "user", "content": content})
+
+    # Expect a tiny JSON {"html":"...","imageSlots":[],"iconSlots":[]}
+    schema = gtypes.Schema(
+        type=gtypes.Type.OBJECT,
+        required=["html"],
+        properties={
+            "html": gtypes.Schema(type=gtypes.Type.STRING),
+            "imageSlots": gtypes.Schema(type=gtypes.Type.ARRAY, items=gtypes.Schema(type=gtypes.Type.OBJECT)),
+            "iconSlots": gtypes.Schema(type=gtypes.Type.ARRAY, items=gtypes.Schema(type=gtypes.Type.OBJECT)),
+        }
+    )
+    full = ""
+    async def cb(chunk: str):
+        nonlocal full
+        full += chunk
+    await stream_gemini_response(
+        messages=messages,
+        api_key=GEMINI_API_KEY,
+        callback=cb,
+        model_name=req.model,
+        response_mime_type="application/json",
+        response_schema=schema,
+    )
+    # Parse
+    try:
+        trimmed = full.strip()
+        if '###_JSON_START_###' in trimmed and '###_JSON_END_###' in trimmed:
+            trimmed = trimmed.split('###_JSON_START_###',1)[1].split('###_JSON_END_###',1)[0]
+        data = json.loads(_sanitize_json_string_literals(_remove_json_comments_and_trailing_commas(_extract_balanced_json(trimmed, 0) or trimmed)))
+        return {
+            "html": data.get("html", ""),
+            "imageSlots": data.get("imageSlots", []),
+            "iconSlots": data.get("iconSlots", []),
+        }
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to parse Section JSON (html/imageSlots/iconSlots)")
 
 def validate_bundle(bundle: ReactBundle, section_specs: List[Dict[str, Any]]) -> List[str]:
     issues: List[str] = []
@@ -527,7 +761,7 @@ async def update_from_diff(req: UpdateRequest):
     if req.sectionSpecs:
         messages[-1]["content"].append({
             "type": "text", 
-            "text": f"\n\nHere are the Section Specs (use these images and headings, and apply data-section attributes):\n```json\n{json.dumps(req.sectionSpecs, indent=2)}\n```"
+            "text": f"\n\nHere are the Section Specs (use these images and headings, and apply data-section attributes).\nCRITICAL: For images, use ONLY the provided `localPath` with a leading `./` and do NOT use remote URLs or placeholders.\n```json\n{json.dumps(req.sectionSpecs, indent=2)}\n```"
         })
 
     bundle = await generate_bundle(messages, req.model)

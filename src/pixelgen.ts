@@ -10,6 +10,9 @@ import { buildFeedback, buildSectionFeedback } from './llm-feedback';
 import { autoRepairHtml } from './auto-repair';
 import { DeviceArtifacts } from './gemini';
 import { scanBaseAssets, injectAssetsIntoHtml, injectCspForAssets, AssetScanResult } from './asset-scan';
+import { writeBaseReactScaffold } from './scaffold';
+import { processAndOptimizeImages } from './image-processor';
+import { generateSection, GeneratedSection } from './section-gen';
 import { chromium } from 'playwright';
 import crypto from 'crypto';
 import pixelmatch from 'pixelmatch';
@@ -130,6 +133,9 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
         console.warn('[PixelGen] Asset scan failed:', e instanceof Error ? e.message : String(e));
     }
 
+    const twoPhase = (process.env.GENERATOR_TWO_PHASE || 'true').toLowerCase() === 'true';
+    const perSection = (process.env.GENERATOR_SECTION_BY_SECTION || 'true').toLowerCase() === 'true';
+
     console.log('[PixelGen] Requesting initial generation...');
     // Multi-turn chat with generator is optional; default to single-shot unless enabled via env
     const useChat = (process.env.GENERATOR_USE_CHAT || '').toLowerCase() === 'true';
@@ -161,6 +167,130 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
     const createData = await createRes.json();
     currentBundle = createData.bundle;
 
+    // Two-phase optional path: seed iteration 0 using a structure + scaffolding app
+    type GeneratedStructure = {
+        html: string;
+        imageSlots: Array<{ id: string; description?: string; dimensions?: { w: number; h: number } }>;
+        iconSlots: Array<{ id: string; name?: string }>;
+    };
+
+    const genStructure = async (): Promise<GeneratedStructure | undefined> => {
+        try {
+            const res = await withRetry(() => fetch(`${GENERATOR_API_URL}/api/generate-structure`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.assign({ image: desktopBaseDataUrl, sectionSpecs: baseAssets?.sectionSpecs, model: createModel }, useChat ? { history: chatHistory } : {}))
+            }), GEN_RETRIES, GEN_RETRY_BASE_MS);
+            if (!res.ok) return undefined;
+            const data = await res.json();
+            return data.structure as GeneratedStructure;
+        } catch { return undefined; }
+    };
+
+    const mapSlotsToAssets = (structure: GeneratedStructure, scan?: AssetScanResult): { html: string } => {
+        let html = structure.html || '';
+        if (!scan) return { html };
+        const images = scan.assets.images.map(im => `./${im.localPath.replace(/\\/g, '/')}`);
+        // Simple mapping: first slots get the largest available assets by order
+        for (let i = 0; i < structure.imageSlots.length; i++) {
+            const slot = structure.imageSlots[i];
+            const choice = images[i] || images[0];
+            if (choice) {
+                const token = slot.id;
+                const re = new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                html = html.replace(re, choice);
+            }
+        }
+        // Icons: replace tokens with DOM placeholders to be hydrated
+        for (const s of structure.iconSlots) {
+            const name = s.name || 'Circle';
+            const re = new RegExp(s.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+            html = html.replace(re, `<i data-icon="${name}"></i>`);
+        }
+        return { html };
+    };
+
+    const gatherSiteContext = async (dir: string): Promise<string> => {
+        const exts = new Set(['.html', '.js', '.css']);
+        let acc = '';
+        const walk = async (p: string) => {
+            const entries = await fs.readdir(p, { withFileTypes: true });
+            for (const e of entries) {
+                const full = path.join(p, e.name);
+                if (e.isDirectory()) { await walk(full); continue; }
+                if (!exts.has(path.extname(e.name).toLowerCase())) continue;
+                const content = await fs.readFile(full, 'utf8').catch(() => '');
+                if (content) {
+                    acc += `\n--- ${path.relative(dir, full)} ---\n${content}\n`;
+                    if (acc.length > 200_000) return; // cap
+                }
+            }
+        };
+        await walk(dir);
+        return acc;
+    };
+
+    // Helper: build a URL -> local path map for captured images
+    const buildImageMap = (scan?: AssetScanResult): Map<string, string> => {
+        const map = new Map<string, string>();
+        if (!scan) return map;
+        for (const im of scan.assets.images) {
+            map.set(im.url, `./${im.localPath.replace(/\\/g, '/')}`);
+        }
+        return map;
+    };
+
+    // Helper: rewrite image sources in all site files to local assets
+    const rewriteImageSourcesOnDisk = async (siteDir: string, imageMap: Map<string, string>, placeholderFallback?: string) => {
+        const exts = new Set(['.html', '.js', '.css']);
+        const walk = async (dir: string) => {
+            const entries = await fs.readdir(dir, { withFileTypes: true });
+            for (const e of entries) {
+                const full = path.join(dir, e.name);
+                if (e.isDirectory()) { await walk(full); continue; }
+                if (!exts.has(path.extname(e.name).toLowerCase())) continue;
+                let text = await fs.readFile(full, 'utf8');
+                let changed = false;
+                // Replace known remote image URLs with local paths
+                for (const [remote, local] of imageMap.entries()) {
+                    if (!remote) continue;
+                    const safeRemote = remote.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const re = new RegExp(safeRemote, 'g');
+                    if (re.test(text)) { text = text.replace(re, local); changed = true; }
+                    const enc = encodeURIComponent(remote).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const reEnc = new RegExp(enc, 'g');
+                    if (reEnc.test(text)) { text = text.replace(reEnc, encodeURIComponent(local)); changed = true; }
+                }
+                // Replace placeholder image URLs (placehold.co / via.placeholder.com) with a reasonable fallback
+                if (placeholderFallback) {
+                    const ph = /https?:\/\/(?:placehold\.co|via\.placeholder\.com)[^'"\s)<>]*/g;
+                    if (ph.test(text)) { text = text.replace(ph, placeholderFallback); changed = true; }
+                }
+                // Replace missing local assets/images/* references with fallback if the file does not exist
+                const localSrcRe = /(src=)(["'])(\.\/|\/)?assets\/images\/([^"']+)\2/g;
+                text = await (async () => {
+                    let out = text; let m: RegExpExecArray | null;
+                    const re = new RegExp(localSrcRe.source, 'g');
+                    while ((m = re.exec(text)) !== null) {
+                        const whole = m[0];
+                        const q = m[2];
+                        const rel = (m[3] || '') + 'assets/images/' + m[4];
+                        const onDisk = path.join(siteDir, rel.replace(/^\//,''));
+                        let exists = false;
+                        try { await fs.access(onDisk); exists = true; } catch { exists = false; }
+                        if (!exists && placeholderFallback) {
+                            const replacement = `src=${q}${placeholderFallback}${q}`;
+                            out = out.replace(whole, replacement);
+                            changed = true;
+                        }
+                    }
+                    return out;
+                })();
+                if (changed) await fs.writeFile(full, text, 'utf8');
+            }
+        };
+        await walk(siteDir);
+    };
+
     // Loop
     let noImprovementStreak = 0;
     let prevBest = 0;
@@ -168,12 +298,149 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
         const iterDir = path.join(runDir, `iteration-${String(i).padStart(2, '0')}`);
         await ensureDir(iterDir);
 
-        // Write bundle with compile-fix fallback
+        // Write bundle with compile-fix fallback (or seed two-phase scaffold at i=0)
         let localUrl: string;
         let entryPath: string;
         try {
-            const r = await writeReactBundle(iterDir, currentBundle!);
-            localUrl = r.localUrl; entryPath = r.entryPath;
+            if (twoPhase && i === 0) {
+                // Structure -> scaffold seeding
+                try {
+                    const siteDir = path.join(iterDir, 'site');
+                    let scaffoldSections: string[] | undefined;
+
+                    if (perSection && baseAssets?.sectionSpecs && Array.isArray(baseAssets.sectionSpecs) && baseAssets.sectionSpecs.length) {
+                        // 1) Prepare desktop base screenshot for cropping
+                        const basePng = PNG.sync.read(await fs.readFile(baseScreenshots['desktop']));
+                        const cropToDataUrl = (rect: { x: number; y: number; width: number; height: number }): string => {
+                            const x = Math.max(0, Math.floor(rect.x));
+                            const y = Math.max(0, Math.floor(rect.y));
+                            const w = Math.max(1, Math.floor(rect.width));
+                            const h = Math.max(1, Math.floor(rect.height));
+                            const out = new PNG({ width: w, height: h });
+                            for (let row = 0; row < h; row++) {
+                                const srcStart = ((y + row) * basePng.width + x) << 2;
+                                const srcEnd = srcStart + (w << 2);
+                                const dstStart = row * (w << 2);
+                                basePng.data.copy(out.data, dstStart, srcStart, srcEnd);
+                            }
+                            const buf = PNG.sync.write(out);
+                            return `data:image/png;base64,${buf.toString('base64')}`;
+                        };
+
+                        // 2) Generate each section independently
+                        const sectionsHtml: string[] = [];
+                        for (const spec of baseAssets.sectionSpecs) {
+                            const secName = spec.name || 'Section';
+                            const secType = (/header/i.test(secName) ? 'header' : /hero|banner/i.test(secName) ? 'hero' : /feature/i.test(secName) ? 'features' : /footer/i.test(secName) ? 'footer' : 'content') as 'header'|'hero'|'features'|'footer'|'content';
+                            const rect = spec.rect || { x: 0, y: 0, width: basePng.width, height: Math.min(600, basePng.height) };
+                            const cropped = cropToDataUrl(rect);
+
+                            const imgs = (spec.images || []).map(im => ({
+                                localPath: im.localPath || '',
+                                originalUrl: im.url,
+                                width: im.width,
+                                height: im.height,
+                            }));
+                            const icons: string[] = ['ShoppingCart','Menu','X','ChevronDown','Search','User','Heart'];
+                            const textContent = spec.textContent || { headings: [], paragraphs: [], buttons: [] };
+
+                            let generated: GeneratedSection;
+                            try {
+                                generated = await generateSection({ sectionName: secName, sectionType: secType, baseScreenshot: cropped, assets: { images: imgs, icons }, textContent, layoutHint: (spec.layoutHint as any) || 'standard' });
+                            } catch {
+                                // Fallback: simple empty container with data-section
+                                generated = { html: `<section data-section="${secName}"></section>`, imageSlots: [], iconSlots: [] };
+                            }
+
+                            // Map image slots to best local assets for this section
+                            const mappedHtml = (() => {
+                                let html = generated.html || '';
+                                const slots = Array.isArray(generated.imageSlots) ? generated.imageSlots : [];
+                                const candidates = (spec.images || []).filter(im => !!im.localPath);
+                                const used = new Set<string>();
+                                const scoreFor = (slot: any, im: any) => {
+                                    const sw = slot?.dimensions?.w || 0; const sh = slot?.dimensions?.h || 0;
+                                    const iw = im.width || 0; const ih = im.height || 0;
+                                    if (sw > 0 && sh > 0 && iw > 0 && ih > 0) {
+                                        const sA = sw * sh; const iA = iw * ih;
+                                        const aDiff = Math.abs(sA - iA) / Math.max(1, sA);
+                                        const sAR = sw / sh; const iAR = iw / ih; const arDiff = Math.abs(sAR - iAR);
+                                        return aDiff + arDiff; // lower is better
+                                    }
+                                    // No slot dims -> prefer larger images
+                                    return -((iw * ih) || 0);
+                                };
+                                for (const slot of slots) {
+                                    let best: any = undefined; let bestScore = Number.POSITIVE_INFINITY;
+                                    for (const im of candidates) {
+                                        if (!im.localPath || used.has(im.localPath)) continue;
+                                        const sc = scoreFor(slot, im);
+                                        if (sc < bestScore) { best = im; bestScore = sc; }
+                                    }
+                                    // Fallback if no candidates
+                                    if (!best && baseAssets?.assets.images?.length) {
+                                        const im = baseAssets.assets.images[0];
+                                        best = { localPath: im.localPath, width: 0, height: 0 };
+                                    }
+                                    if (best && best.localPath) {
+                                        used.add(best.localPath);
+                                        const replacement = `./${String(best.localPath).replace(/\\/g, '/')}`;
+                                        const token = String(slot.id || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                        const re = new RegExp(token, 'g');
+                                        html = html.replace(re, replacement);
+                                    }
+                                }
+                                // Icon tokens -> DOM placeholders to hydrate
+                                const iconSlots = Array.isArray(generated.iconSlots) ? generated.iconSlots : [];
+                                for (const s of iconSlots) {
+                                    const token = String(s.id || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                    const re = new RegExp(token, 'g');
+                                    const nm = s.name || 'Circle';
+                                    html = html.replace(re, `<i data-icon="${nm}"></i>`);
+                                }
+                                return html;
+                            })();
+
+                            sectionsHtml.push(mappedHtml);
+                        }
+                        scaffoldSections = sectionsHtml;
+                    }
+
+                    if (!scaffoldSections) {
+                        const structure = await genStructure();
+                        if (structure) {
+                            const mapped = mapSlotsToAssets(structure, baseAssets);
+                            scaffoldSections = [mapped.html];
+                        }
+                    }
+
+                    if (scaffoldSections) {
+                        const scaffold = await writeBaseReactScaffold(siteDir, scaffoldSections);
+                        localUrl = scaffold.localUrl; entryPath = scaffold.entryPath;
+                        if (baseAssets) await injectAssetsIntoHtml(entryPath, path.dirname(entryPath), baseAssets);
+                        const ctx = await gatherSiteContext(siteDir);
+                        await fs.writeFile(path.join(iterDir, 'site-context.txt'), ctx);
+                    } else {
+                        // Fall back to normal bundle path
+                        const r = await writeReactBundle(iterDir, currentBundle!);
+                        localUrl = r.localUrl; entryPath = r.entryPath;
+                    }
+                } catch {
+                    const r = await writeReactBundle(iterDir, currentBundle!);
+                    localUrl = r.localUrl; entryPath = r.entryPath;
+                }
+            } else {
+                const r = await writeReactBundle(iterDir, currentBundle!);
+                localUrl = r.localUrl; entryPath = r.entryPath;
+            }
+            // Post-process: rewrite image URLs in generated code to local asset paths
+            if (baseAssets) {
+                const entryDir = path.dirname(entryPath);
+                const map = buildImageMap(baseAssets);
+                const fallback = baseAssets.heroCandidate ? `./${baseAssets.heroCandidate.replace(/\\/g, '/')}`
+                              : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
+                await rewriteImageSourcesOnDisk(entryDir, map, fallback);
+            }
         } catch (e) {
             const errMsg = e instanceof Error ? e.message : String(e);
             console.warn('[PixelGen] Bundle compile failed; requesting code fix...', errMsg);
@@ -186,9 +453,11 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                 errMsg,
                 '---',
             ].join('\n');
+            const scaffoldCtxPath = path.join(iterDir, 'site-context.txt');
+            const scaffoldCtx = await fs.readFile(scaffoldCtxPath, 'utf8').catch(() => '');
             const updateRes = await withRetry(() => fetch(`${GENERATOR_API_URL}/api/update-from-diff`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(Object.assign({ stack, currentBundle, instructions, images: [desktopBaseDataUrl], model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
+                body: JSON.stringify(Object.assign({ stack, currentBundle, currentHtml: currentBundle ? undefined : scaffoldCtx, instructions, images: [desktopBaseDataUrl], model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
             }), GEN_RETRIES, GEN_RETRY_BASE_MS);
             if (!updateRes.ok) {
                 let detail = '';
@@ -200,6 +469,14 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
             if (useChat) { try { chatHistory.push({ role: 'user', content: instructions }); capHistory(); } catch { } }
             const r2 = await writeReactBundle(iterDir, currentBundle!);
             localUrl = r2.localUrl; entryPath = r2.entryPath;
+            // Post-process after recovery compile
+            if (baseAssets) {
+                const entryDir = path.dirname(entryPath);
+                const map = buildImageMap(baseAssets);
+                const fallback = baseAssets.heroCandidate ? `./${baseAssets.heroCandidate.replace(/\\/g, '/')}`
+                              : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
+                await rewriteImageSourcesOnDisk(entryDir, map, fallback);
+            }
         }
 
         // Inject base assets (fonts + typography) into the generated app
@@ -311,9 +588,10 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                         ...((health.pageErrors || []).map(e => `- ${e}`)),
                         ...((health.console || []).filter(c => c.type === 'error').slice(0, 6).map(c => `- console.error: ${c.text}`)),
                     ].join('\n');
+                    const compileCtx = currentBundle ? undefined : await fs.readFile(path.join(iterDir, 'site-context.txt'), 'utf8').catch(()=>'');
                     const compileRes = await withRetry(() => fetch(`${GENERATOR_API_URL}/api/update-from-diff`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(Object.assign({ stack, currentBundle, instructions: compileOnly, images: (health.screenshotDataUrl ? [health.screenshotDataUrl] : []), model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
+                        body: JSON.stringify(Object.assign({ stack, currentBundle, currentHtml: compileCtx, instructions: compileOnly, images: (health.screenshotDataUrl ? [health.screenshotDataUrl] : []), model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
                     }), GEN_RETRIES, GEN_RETRY_BASE_MS);
                     if (compileRes.ok) {
                         const data = await compileRes.json();
@@ -323,6 +601,11 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                             const rewritten2 = await writeReactBundle(iterDir, currentBundle!);
                             if (baseAssets) {
                                 const entryDir2 = path.dirname(rewritten2.entryPath);
+                                // Ensure images use local assets paths
+                                const map2 = buildImageMap(baseAssets);
+                                const fallback2 = baseAssets.heroCandidate ? `./${baseAssets.heroCandidate.replace(/\\/g, '/')}`
+                                                : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
+                                await rewriteImageSourcesOnDisk(entryDir2, map2, fallback2);
                                 await injectAssetsIntoHtml(rewritten2.entryPath, entryDir2, baseAssets);
                             }
                         } catch (e) {
@@ -682,10 +965,11 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                 updateImages.push(`data:image/png;base64,${diffBuf.toString('base64')}`);
             }
 
+            const globalCtx = currentBundle ? undefined : await fs.readFile(path.join(iterDir, 'site-context.txt'), 'utf8').catch(()=>'');
             const updateRes = await withRetry(() => fetch(`${GENERATOR_API_URL}/api/update-from-diff`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(Object.assign({ stack, currentBundle, instructions, images: updateImages, model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
+                body: JSON.stringify(Object.assign({ stack, currentBundle, currentHtml: globalCtx, instructions, images: updateImages, model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
             }), GEN_RETRIES, GEN_RETRY_BASE_MS);
 
             if (!updateRes.ok) {
