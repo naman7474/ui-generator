@@ -7,6 +7,7 @@ import { capture } from './screenshot';
 import { writeReactBundle, ReactBundle } from './react-host';
 import { compareSites } from './comparator';
 import { buildFeedback, buildSectionFeedback } from './llm-feedback';
+import { autoRepairHtml } from './auto-repair';
 import { DeviceArtifacts } from './gemini';
 import { scanBaseAssets, injectAssetsIntoHtml, injectCspForAssets, AssetScanResult } from './asset-scan';
 import { chromium } from 'playwright';
@@ -268,6 +269,32 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                     console.log(`[PixelGen] Preflight recovered after ${attempt} fix attempt(s).`);
                 }
                 break;
+            }
+
+            // Tailwind auto-repair: detect 'tailwind is not defined' and fix index.html ordering
+            try {
+                const errors = [
+                    ...health.pageErrors,
+                    ...health.console.filter((c) => c.type === 'error').map((c) => c.text),
+                ];
+                const indexPath = path.join(path.dirname(entryPath), 'index.html');
+                const hasIndex = await fs.access(indexPath).then(() => true).catch(() => false);
+                if (hasIndex) {
+                    const html = await fs.readFile(indexPath, 'utf8');
+                    const repaired = autoRepairHtml(html, errors);
+                    if (repaired !== html) {
+                        await fs.writeFile(indexPath, repaired, 'utf8');
+                        const recheck = await preflightCheck(localUrl, { allowedImageSuffixes, allowedFontTokens, allowedColors });
+                        lastHealth = recheck;
+                        await fs.writeFile(path.join(iterDir, `preflight-${attempt}-after-tailwind-repair.json`), JSON.stringify(recheck, null, 2));
+                        if (recheck.healthy) {
+                            console.log('[PixelGen] Preflight recovered after Tailwind auto-repair.');
+                            break;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('[PixelGen] Tailwind auto-repair failed:', e instanceof Error ? e.message : String(e));
             }
 
             // If the error signature hasn't changed after local auto-repairs, skip costly LLM call
@@ -881,6 +908,27 @@ const preflightCheck = async (
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     const page = await context.newPage();
+    // Capture syntax errors that occur during module parse by wiring listeners before navigation
+    try {
+        await page.addInitScript(() => {
+            window.addEventListener('error', (e) => {
+                try {
+                    // surface as console.error so our collector can capture source and line
+                    // Some environments provide filename/lineno/colno
+                    const msg = `SYNTAX ERROR: ${e.message || ''} at ${e.filename || ''}:${e.lineno || 0}:${e.colno || 0}`;
+                    // @ts-ignore
+                    console.error(msg);
+                } catch {}
+            });
+            window.addEventListener('unhandledrejection', (e) => {
+                try {
+                    const reason = (e && (e as any).reason) ? String((e as any).reason) : 'unhandledrejection';
+                    // @ts-ignore
+                    console.error(`UNHANDLED REJECTION: ${reason}`);
+                } catch {}
+            });
+        });
+    } catch {}
     const logs: PreflightResult['console'] = [];
     const pageErrors: string[] = [];
     const networkErrors: PreflightResult['networkErrors'] = [];

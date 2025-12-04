@@ -84,6 +84,18 @@ const replaceTailwindCdnScriptWithCss = (html: string): string => {
     return html.replace(re, link);
 };
 
+// Remove external Google Fonts links and @import blocks to avoid CSP/font loading errors
+const stripExternalGoogleFonts = (html: string): string => {
+    let out = html;
+    // Remove <link ... href="https://fonts.googleapis.com/...">
+    out = out.replace(/<link[^>]*href=["']https?:\/\/fonts\.googleapis\.com[^>]*>/gi, '');
+    // Remove <link ... href="https://fonts.gstatic.com/...">
+    out = out.replace(/<link[^>]*href=["']https?:\/\/fonts\.gstatic\.com[^>]*>/gi, '');
+    // Remove @import lines to Google Fonts inside style blocks (keep the rest of the style content)
+    out = out.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, (m) => m.replace(/@import[^;]*fonts\.googleapis\.com[^;]*;/gi, ''));
+    return out;
+};
+
 const sanitizeSitePath = (siteDir: string, relativePath: string): string => {
     // Prevent absolute paths and traversal outside siteDir
     const cleanRel = relativePath.replace(/^\/+/, '');
@@ -596,7 +608,8 @@ export const writeReactBundle = async (
             // 1) convert .jsx/.tsx to .js inside quoted strings
             // 2) ensure relative imports have .js
             // 3) convert root-relative paths (e.g. "/main.js") to relative ("./main.js")
-            content = replaceTailwindCdnScriptWithCss(
+            content = stripExternalGoogleFonts(
+                replaceTailwindCdnScriptWithCss(
                 ensureModuleTypeForLocalScripts(
                     rewriteRootRelativeToRelative(
                         ensureRelativeHasJsExtension(
@@ -604,7 +617,7 @@ export const writeReactBundle = async (
                         )
                     )
                 )
-            );
+            ));
         } else if (ext === '.js') {
             // Downlevel and normalize
             let result;
@@ -678,6 +691,16 @@ export const writeReactBundle = async (
                 canonicalizeReactCdnImports(fixBareReactImports(fixReactDomClientImport(fixLucideIconChildren(result.code))))
             );
             await fs.writeFile(mainJsPath, out);
+        }
+        // Ensure App.js exists if referenced by scaffold or generated main.js
+        const appJsPath = path.join(siteDir, 'App.js');
+        try {
+            await fs.access(appJsPath);
+        } catch {
+            const minimalApp = `import React from 'https://esm.sh/react@18?dev&target=es2018';\nexport default function App() { return React.createElement('div', { className: 'p-4 text-gray-700' }, 'App placeholder'); }`;
+            const result = await transform(minimalApp, { loader: 'jsx', format: 'esm', target: 'es2018', sourcemap: false });
+            const out = canonicalizeReactCdnImports(fixBareReactImports(fixReactDomClientImport(fixLucideIconChildren(result.code))));
+            await fs.writeFile(appJsPath, out);
         }
     } else {
         // Entry is a script; ensure an index.html that loads it

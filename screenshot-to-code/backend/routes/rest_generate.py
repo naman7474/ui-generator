@@ -36,35 +36,65 @@ class ReactBundle(BaseModel):
     files: List[Dict[str, str]]
 
 SYSTEM_PROMPT = """
-You are an expert frontend developer.
-Return a strict JSON object matching this schema:
+You are an expert frontend developer specialized in EXACT visual replication.
+
+## OUTPUT REQUIREMENTS
+You MUST return a valid JSON object with this exact structure:
 {
   "entry": "index.html",
   "files": [
     { "path": "index.html", "content": "..." },
     { "path": "App.jsx", "content": "..." },
     { "path": "main.jsx", "content": "..." },
-    { "path": "components/Header.jsx", "content": "..." }
+    { "path": "components/SectionName.jsx", "content": "..." }
   ]
 }
 
 IMPORTANT:
-1. Wrap the JSON object in these sentinels:
+1) Wrap the JSON object in these sentinels:
 ###_JSON_START_###
 { ... }
 ###_JSON_END_###
+2) The JSON MUST be strictly valid: no comments, no trailing commas, and all strings JSON-escaped (including newlines as \n).
+3) Always include BOTH sentinels and nothing else outside them.
+4) Split code into components under components/* with descriptive names.
+5) Use Tailwind CSS via CDN in index.html.
+6) Ensure all imports are valid ESM imports (e.g. from 'https://esm.sh/react@18').
 
-2. The JSON MUST be strictly valid: no comments, no trailing commas, and all strings JSON-escaped (including newlines as \n).
-3. Always include BOTH sentinels and nothing else outside them.
-4. Split code into components under components/* with descriptive names.
-5. You CAN use JSX and ESM syntax. The code will be transpiled server-side.
-6. Use Tailwind CSS via CDN in index.html.
-7. Ensure all imports are valid ESM imports (e.g. from 'https://esm.sh/react@18').
-8. CRITICAL: Use the provided `section_specs` JSON to structure the app.
-   - For each section defined in `section_specs`, create a container element (e.g., <section>, <header>, <footer>).
-   - Add `data-section="<SectionName>"` to that container.
-   - Use the images provided in `section_specs` for that section.
-   - Use the heading text provided in `section_specs` for that section.
+## CRITICAL RULES
+### Structure
+1. Create ONE component per major section (Header, Hero, Features, Footer, etc.)
+2. Each section component MUST have `data-section="SectionName"` on its root element
+3. Maintain the EXACT section order from the screenshot
+
+### Visual Accuracy
+1. Use EXACT Tailwind classes for spacing
+2. Use EXACT colors
+3. Match font sizes precisely
+4. Match border radius and shadows
+
+### Images
+- Use section_specs images when provided: `./assets/images/[filename]`
+- Otherwise use: `https://placehold.co/WIDTHxHEIGHT`
+- Include meaningful alt text
+
+### Content
+- Use EXACT text from the screenshot
+- Include ALL list items
+- Preserve exact button text and labels
+
+### Code Quality  
+- Use semantic HTML (header, nav, main, section, article, footer)
+- Create reusable components for repeated patterns
+- Keep JSX clean and readable
+
+## SECTION_SPECS USAGE
+When section_specs is provided, for EACH section:
+1. Create a component with `data-section={section.name}`
+2. Use the layout hint: grid → CSS Grid, flex-row → flexbox row, flex-col → flexbox column
+3. Use section.images for img src attributes
+4. Use section.textContent for headings and text
+5. Apply section.backgroundColor and section.padding
 """
 
 def _strip_code_fences(s: str) -> str:
@@ -415,28 +445,53 @@ async def generate_bundle(messages: List[Any], model: str) -> ReactBundle:
 @router.post("/api/generate-from-image")
 async def generate_from_image(req: GenerateRequest):
     # Send the prompt as system instruction and the image + request as user content
-    messages: List[Dict[str, Any]] = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-    ]
+    messages: List[Dict[str, Any]] = [{"role": "system", "content": SYSTEM_PROMPT}]
     # Include prior history if provided to keep the same conversation]
     if req.history:
         messages.extend(req.history)
-    messages.append({
-        "role": "user",
-        "content": [
-            {"type": "image_url", "image_url": {"url": req.image}},
-            {"type": "text", "text": "Generate a React app based on this image."},
-        ]
-    })
-    
+    user_content: List[Dict[str, Any]] = [
+        {"type": "image_url", "image_url": {"url": req.image}},
+        {"type": "text", "text": "Analyze this screenshot and generate a pixel-perfect React + Tailwind replica."},
+    ]
     if req.sectionSpecs:
-        messages[-1]["content"].append({
-            "type": "text", 
-            "text": f"\n\nHere are the Section Specs (use these images and headings, and apply data-section attributes):\n```json\n{json.dumps(req.sectionSpecs, indent=2)}\n```"
+        user_content.append({
+            "type": "text",
+            "text": f"""
+## Section Specifications
+
+Use these specifications to structure your output:
+```json
+{json.dumps(req.sectionSpecs, indent=2)}
+```
+
+For each section:
+1. Add `data-section="{{name}}"` to the section container
+2. Use the exact `layoutHint` for CSS layout
+3. Use images from `images[].localPath` or `images[].url`
+4. Apply `backgroundColor` and `padding` if specified
+"""
         })
+    messages.append({"role": "user", "content": user_content})
 
     bundle = await generate_bundle(messages, req.model)
     return {"bundle": bundle.dict(), "model": req.model}
+
+def validate_bundle(bundle: ReactBundle, section_specs: List[Dict[str, Any]]) -> List[str]:
+    issues: List[str] = []
+    file_paths = {f['path'] for f in bundle.files}
+    if 'index.html' not in file_paths:
+        issues.append('Missing index.html')
+    if not any(p in file_paths for p in ('App.jsx','App.js')):
+        issues.append('Missing App.jsx')
+    if section_specs:
+        jsx = ''.join(
+            f['content'] for f in bundle.files if f['path'].endswith('.jsx') or f['path'].endswith('.js')
+        )
+        for spec in section_specs:
+            name = spec.get('name')
+            if name and f'data-section="{name}"' not in jsx:
+                issues.append(f'Missing data-section marker for: {name}')
+    return issues
 
 @router.post("/api/update-from-diff")
 async def update_from_diff(req: UpdateRequest):

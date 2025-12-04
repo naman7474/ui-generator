@@ -37,7 +37,14 @@ export type AssetScanResult = {
     heading?: string;
     layoutHint?: string;
     rect?: { x: number; y: number; width: number; height: number };
-    images: Array<{ kind: 'img' | 'background'; url: string; localPath?: string; alt?: string; width?: number; height?: number }>;
+    backgroundColor?: string;
+    backgroundImage?: string;
+    padding?: string;
+    gridColumns?: number;
+    flexGap?: string;
+    childCount?: number;
+    images: Array<{ kind: 'img' | 'background'; url: string; localPath?: string; alt?: string; width?: number; height?: number; position?: { x: number; y: number } }>;
+    textContent?: { headings: string[]; paragraphs: string[]; buttons: string[] };
   }>;
 };
 
@@ -306,7 +313,30 @@ export const scanBaseAssets = async (
       heading: sec.heading,
       layoutHint: sec.layoutHint,
       rect: { x: sec.rect.x, y: sec.rect.y, width: sec.rect.width, height: sec.rect.height },
-      images: [] as Array<any>
+      images: [] as Array<any>,
+      backgroundColor: (document.elementFromPoint(Math.max(0, sec.rect.left + 1), Math.max(0, sec.rect.top + 1)) as HTMLElement | null)?.style?.backgroundColor,
+      backgroundImage: (() => {
+        const el = document.querySelector(sec.selector) as HTMLElement | null;
+        if (!el) return undefined;
+        const cs = window.getComputedStyle(el);
+        const bg = cs.getPropertyValue('background-image');
+        return /url\(/.test(bg) ? bg : undefined;
+      })(),
+      padding: (() => {
+        const el = document.querySelector(sec.selector) as HTMLElement | null; if (!el) return undefined; const cs = window.getComputedStyle(el);
+        const p = [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft].join(' ');
+        return p;
+      })(),
+      childCount: (() => { const el = document.querySelector(sec.selector) as HTMLElement | null; return el ? el.children.length : undefined; })(),
+      gridColumns: (() => { const el = document.querySelector(sec.selector) as HTMLElement | null; if (!el) return undefined; const cs = window.getComputedStyle(el); const g = cs.gridTemplateColumns; if (!g || g === 'none') return undefined; return g.split(' ').length; })(),
+      flexGap: (() => { const el = document.querySelector(sec.selector) as HTMLElement | null; if (!el) return undefined; const cs = window.getComputedStyle(el); const gap = cs.gap; return gap && gap !== 'normal' ? gap : undefined; })(),
+      textContent: (() => {
+        const el = document.querySelector(sec.selector) as HTMLElement | null; if (!el) return undefined;
+        const headings = Array.from(el.querySelectorAll('h1,h2,h3')).map(h => (h.textContent || '').trim()).filter(Boolean);
+        const paragraphs = Array.from(el.querySelectorAll('p')).map(p => (p.textContent || '').trim()).filter(Boolean).slice(0, 20);
+        const buttons = Array.from(el.querySelectorAll('a,button')).map(b => (b.textContent || '').trim()).filter(Boolean).slice(0, 20);
+        return { headings, paragraphs, buttons };
+      })()
     }));
 
     const contains = (r: DOMRect, x: number, y: number) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
@@ -324,14 +354,17 @@ export const scanBaseAssets = async (
         idx = best;
       }
       if (idx >= 0) {
-        (sectionMappings[idx].images as any[]).push({ kind: 'img', url: img.src, alt: img.alt, width: img.width, height: img.height });
+        const sec = sections[idx];
+        const relX = img.rect.left - sec.rect.left;
+        const relY = img.rect.top - sec.rect.top;
+        (sectionMappings[idx].images as any[]).push({ kind: 'img', url: img.src, alt: img.alt, width: img.width, height: img.height, position: { x: relX, y: relY } });
       }
     }
     for (const b of bgImages) {
       // Assign background images to the section that owns that rect
       const idx = sections.findIndex(sec => sec.rect.left === b.rect.left && sec.rect.top === b.rect.top && sec.rect.width === b.rect.width && sec.rect.height === b.rect.height);
       if (idx >= 0) {
-        (sectionMappings[idx].images as any[]).push({ kind: 'background', url: b.url });
+        (sectionMappings[idx].images as any[]).push({ kind: 'background', url: b.url, position: { x: 0, y: 0 } });
       }
     }
 
@@ -498,6 +531,12 @@ export const scanBaseAssets = async (
       heading: s.heading,
       layoutHint: s.layoutHint,
       rect: s.rect,
+      backgroundColor: s.backgroundColor,
+      backgroundImage: s.backgroundImage,
+      padding: s.padding,
+      gridColumns: s.gridColumns,
+      flexGap: s.flexGap,
+      childCount: s.childCount,
       images: (s.images || []).map((im: any) => ({
         kind: im.kind,
         url: im.url,
@@ -505,7 +544,20 @@ export const scanBaseAssets = async (
         alt: im.alt,
         width: im.width,
         height: im.height,
+        position: im.position,
       }))
+    })).map((s: any) => ({
+      ...s,
+      textContent: ((): any => {
+        try {
+          const secEl = s.selector ? document.querySelector(s.selector) as HTMLElement | null : null;
+          if (!secEl) return undefined;
+          const headings = Array.from(secEl.querySelectorAll('h1,h2,h3')).map((h: any) => (h.textContent || '').trim()).filter(Boolean);
+          const paragraphs = Array.from(secEl.querySelectorAll('p')).map((p: any) => (p.textContent || '').trim()).filter(Boolean).slice(0, 20);
+          const buttons = Array.from(secEl.querySelectorAll('a,button')).map((b: any) => (b.textContent || '').trim()).filter(Boolean).slice(0, 20);
+          return { headings, paragraphs, buttons };
+        } catch { return undefined; }
+      })()
     })),
   };
 };
