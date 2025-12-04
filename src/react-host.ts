@@ -9,6 +9,18 @@ export type ReactBundle = {
     files: Array<{ path: string; content: string }>;
 };
 
+// Strip common non-code artifacts sometimes leaked by LLMs into JS/JSX files
+const sanitizeGeneratedJs = (code: string): string => {
+    let out = code;
+    // Remove triple backtick fences and language identifiers
+    out = out.replace(/```[a-zA-Z]*\n?/g, '');
+    // Remove JSON sentinels
+    out = out.replace(/###_JSON_START_###|###_JSON_END_###/g, '');
+    // Remove "[Pasted Content ...]" marker lines
+    out = out.replace(/^\s*\[Pasted Content[^\n]*\]\s*$/gmi, '');
+    return out;
+};
+
 const rewriteQuotedExtensionToJs = (code: string): string => {
     // Replace occurrences of ".jsx" or ".tsx" inside quoted strings with ".js".
     // Covers import/export/dynamic import and basic HTML attribute values.
@@ -60,6 +72,16 @@ const ensureModuleTypeForLocalScripts = (html: string): string => {
         // Otherwise, inject type="module"
         return `<script type="module"${tagAttrs}>`;
     });
+};
+
+// Replace Tailwind CDN runtime script with a static CSS fallback to avoid executing modern JS in headless contexts
+const replaceTailwindCdnScriptWithCss = (html: string): string => {
+    const re = /<script\s+[^>]*src=["']https?:\/\/cdn\.tailwindcss\.com["'][^>]*><\/script>/gi;
+    if (!re.test(html)) return html;
+    // Note: v3+ does not ship an official precompiled CSS. We use v2.2.19 as a broadly compatible fallback
+    const cssHref = 'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';
+    const link = `<link rel="stylesheet" href="${cssHref}">`;
+    return html.replace(re, link);
 };
 
 const sanitizeSitePath = (siteDir: string, relativePath: string): string => {
@@ -179,12 +201,17 @@ const fixReactDomClientImport = (code: string): string => {
 const fixBareReactImports = (code: string): string => {
     // Ensure bare imports are resolvable in the browser by pointing to esm.sh
     const dev = process.env.REACT_DEV === 'true' || process.env.NODE_ENV !== 'production';
-    const reactUrl = dev ? 'https://esm.sh/react@18?dev' : 'https://esm.sh/react@18';
-    const rdomUrl = dev ? 'https://esm.sh/react-dom@18/client?dev' : 'https://esm.sh/react-dom@18/client';
-    const lucideUrl = dev ? 'https://esm.sh/lucide-react?dev' : 'https://esm.sh/lucide-react';
+    const target = 'es2018';
+    const reactUrl = dev ? `https://esm.sh/react@18?dev&target=${target}` : `https://esm.sh/react@18?target=${target}`;
+    const rdomUrl = dev ? `https://esm.sh/react-dom@18/client?dev&target=${target}` : `https://esm.sh/react-dom@18/client?target=${target}`;
+    const lucideUrl = dev ? `https://esm.sh/lucide-react?dev&target=${target}` : `https://esm.sh/lucide-react?target=${target}`;
     let out = code.replace(/from\s+['\"]react-dom\/client['\"]/g, `from '${rdomUrl}'`);
     out = out.replace(/from\s+['\"]react['\"]/g, `from '${reactUrl}'`);
     out = out.replace(/from\s+['\"]lucide-react['\"]/g, `from '${lucideUrl}'`);
+    // Normalize any esm.sh CDN entries to include target as well
+    out = out.replace(/from\s+['\"]https:\/\/esm\.sh\/react(@[^'"\s]*)?(\?[^'"\s]*)?['\"]/g, (_m) => `from '${reactUrl}'`);
+    out = out.replace(/from\s+['\"]https:\/\/esm\.sh\/react-dom(@[^'"\s]*)?\/client(\?[^'"\s]*)?['\"]/g, (_m) => `from '${rdomUrl}'`);
+    out = out.replace(/from\s+['\"]https:\/\/esm\.sh\/lucide-react(@[^'"\s]*)?(\?[^'"\s]*)?['\"]/g, (_m) => `from '${lucideUrl}'`);
     return out;
 };
 
@@ -221,6 +248,56 @@ const fixLucideIconChildren = (code: string): string => {
         out = out.replace(childRe, (_mm, g1: string, icon: string, g3: string) => `${'>'}${g1}<${ns}.${icon} />${g3}<`);
     }
 
+    return out;
+};
+
+// Heuristic: unwrap double-curly object literals rendered as children (e.g., > {{value}} < -> > {value} <)
+const fixInvalidJsxChildren = (code: string): string => {
+    let out = code;
+    // Replace child object literal patterns with inner expression
+    out = out.replace(/>(\s*)\{\s*\{([\s\S]*?)\}\s*\}(\s*)</g, '>$1{$2}$3<');
+    return out;
+};
+
+// Replace lucide-react imports with local lightweight SVG stubs to avoid runtime incompatibilities
+const rewriteLucideImportsToLocal = async (code: string, outDir: string): Promise<string> => {
+    let out = code;
+    const re = /(^|\n)\s*import\s*{\s*([^}]+?)\s*}\s*from\s*(["'])([^"']*lucide-react[^"']*)\3\s*;?/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(code)) !== null) {
+        const full = m[0];
+        const names = m[2].split(',').map(s => s.trim()).filter(Boolean);
+        const locals = names.map(n => {
+            const mm = n.match(/^(\w+)(?:\s+as\s+(\w+))?$/);
+            return mm ? (mm[2] || mm[1]) : n.replace(/\sas\s+.*$/,'').trim();
+        });
+        // Build a local __icons.js file in the same directory with named exports
+        const lines: string[] = [];
+        const localPath = path.join(outDir, '__icons.js');
+        await fs.mkdir(outDir, { recursive: true });
+        // Read existing icons to preserve previously exported names
+        const existing: Set<string> = new Set();
+        try {
+            const cur = await fs.readFile(localPath, 'utf8');
+            const reExport = /export\s+const\s+(\w+)\s*=\s*/g;
+            let mm: RegExpExecArray | null;
+            while ((mm = reExport.exec(cur)) !== null) existing.add(mm[1]);
+            if (cur.trim().length > 0) lines.push(cur.trim());
+        } catch {}
+        // Merge new icons
+        const needed = locals.filter(n => !existing.has(n));
+        if (needed.length) {
+            if (!lines.length) lines.push(`import React from 'https://esm.sh/react@18?dev&target=es2018';`);
+            for (const nm of needed) {
+                lines.push(
+                    `export const ${nm} = (props) => React.createElement('svg', Object.assign({ width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, props), React.createElement('rect', { x: 3, y: 3, width: 18, height: 18, rx: 2, ry: 2, opacity: 0.1 }));`
+                );
+            }
+        }
+        if (lines.length) await fs.writeFile(localPath, lines.join('\n') + '\n');
+        const rel = './__icons.js';
+        out = out.replace(full, `\nimport { ${locals.join(', ')} } from '${rel}';`);
+    }
     return out;
 };
 
@@ -419,7 +496,7 @@ const SCAFFOLD_INDEX_HTML = `<!DOCTYPE html>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Generated App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
   </head>
   <body>
     <div id="root"></div>
@@ -466,12 +543,17 @@ export const writeReactBundle = async (
 
         // Basic rewrites before transpile
         content = rewriteQuotedExtensionToJs(content);
+        if (ext === '.js' || ext === '.jsx' || ext === '.tsx') {
+            content = sanitizeGeneratedJs(content);
+        }
         content = canonicalizeReactCdnImports(
             addDevParamToReactCdn(
                 fixBareReactImports(
                     fixIconMisimportsFromReact(
                         fixReactDomClientImport(
-                            fixLucideIconChildren(content)
+                            fixInvalidJsxChildren(
+                                fixLucideIconChildren(content)
+                            )
                         )
                     )
                 )
@@ -486,6 +568,8 @@ export const writeReactBundle = async (
                 result = await transform(content, {
                     loader: ext.slice(1) as 'jsx' | 'tsx',
                     format: 'esm',
+                    target: 'es2018',
+                    sourcemap: false,
                 });
             } catch (e: any) {
                 const msg = e && e.message ? e.message : String(e);
@@ -497,7 +581,9 @@ export const writeReactBundle = async (
                         fixBareReactImports(
                             fixIconMisimportsFromReact(
                                 fixReactDomClientImport(
-                                    fixLucideIconChildren(result.code)
+                                    fixInvalidJsxChildren(
+                                        fixLucideIconChildren(result.code)
+                                    )
                                 )
                             )
                         )
@@ -510,22 +596,33 @@ export const writeReactBundle = async (
             // 1) convert .jsx/.tsx to .js inside quoted strings
             // 2) ensure relative imports have .js
             // 3) convert root-relative paths (e.g. "/main.js") to relative ("./main.js")
-            content = ensureModuleTypeForLocalScripts(
-                rewriteRootRelativeToRelative(
-                    ensureRelativeHasJsExtension(
-                        rewriteQuotedExtensionToJs(content)
+            content = replaceTailwindCdnScriptWithCss(
+                ensureModuleTypeForLocalScripts(
+                    rewriteRootRelativeToRelative(
+                        ensureRelativeHasJsExtension(
+                            rewriteQuotedExtensionToJs(content)
+                        )
                     )
                 )
             );
         } else if (ext === '.js') {
-            // Ensure extensionless relative imports have .js
+            // Downlevel and normalize
+            let result;
+            try {
+                result = await transform(content, { loader: 'js', format: 'esm', target: 'es2018', sourcemap: false });
+            } catch (e: any) {
+                const msg = e && e.message ? e.message : String(e);
+                throw new Error(`esbuild transform failed for ${originalRelPath}: ${msg}`);
+            }
             content = ensureRelativeHasJsExtension(
                 canonicalizeReactCdnImports(
                     addDevParamToReactCdn(
                         fixBareReactImports(
                             fixIconMisimportsFromReact(
                                 fixReactDomClientImport(
-                                    fixLucideIconChildren(content)
+                                    fixInvalidJsxChildren(
+                                        fixLucideIconChildren(result.code)
+                                    )
                                 )
                             )
                         )
@@ -548,6 +645,8 @@ export const writeReactBundle = async (
                 }
                 await fs.writeFile(shimPath, shimLines.join('\n'));
             }
+            // Replace lucide-react with local stubs to eliminate React child/runtime compatibility issues
+            content = await rewriteLucideImportsToLocal(content, path.dirname(targetPath));
         }
 
         await fs.mkdir(path.dirname(targetPath), { recursive: true });
@@ -568,6 +667,17 @@ export const writeReactBundle = async (
             // If missing, fall back to scaffold
             entryHtmlPath = path.join(siteDir, 'index.html');
             await fs.writeFile(entryHtmlPath, SCAFFOLD_INDEX_HTML);
+        }
+        // Ensure default main.js exists to satisfy typical index.html expectations
+        const mainJsPath = path.join(siteDir, 'main.js');
+        try {
+            await fs.access(mainJsPath);
+        } catch {
+            const result = await transform(SCAFFOLD_MAIN_JSX, { loader: 'jsx', format: 'esm', target: 'es2018', sourcemap: false });
+            const out = ensureRelativeHasJsExtension(
+                canonicalizeReactCdnImports(fixBareReactImports(fixReactDomClientImport(fixLucideIconChildren(result.code))))
+            );
+            await fs.writeFile(mainJsPath, out);
         }
     } else {
         // Entry is a script; ensure an index.html that loads it
@@ -595,6 +705,8 @@ export const writeReactBundle = async (
             const result = await transform(SCAFFOLD_MAIN_JSX, {
                 loader: 'jsx',
                 format: 'esm',
+                target: 'es2018',
+                sourcemap: false,
             });
             const out = ensureRelativeHasJsExtension(
                 canonicalizeReactCdnImports(fixBareReactImports(fixReactDomClientImport(fixLucideIconChildren(result.code))))
@@ -620,8 +732,9 @@ export const writeReactBundle = async (
 export default function App() { return React.createElement('div', { className: 'p-4 text-red-500' }, 'No App.tsx found'); }`;
 
             // Transpile it just in case, though it's simple JS
-            const result = await transform(minimalApp, { loader: 'jsx', format: 'esm' });
-            await fs.writeFile(appJsPath, result.code);
+            const result = await transform(minimalApp, { loader: 'jsx', format: 'esm', target: 'es2018', sourcemap: false });
+            const out = canonicalizeReactCdnImports(fixBareReactImports(fixReactDomClientImport(fixLucideIconChildren(result.code))));
+            await fs.writeFile(appJsPath, out);
         }
     }
 

@@ -11,6 +11,7 @@ import { buildLinksForReport, storage } from './storage';
 import { cleanupArtifacts } from './cleanup';
 import { recordRun, renderMetrics } from './metrics';
 import { supabase, db, isSupabaseConfigured } from './supabase';
+import { Agent, setGlobalDispatcher } from 'undici';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -25,12 +26,28 @@ app.use('/artifacts', express.static(config.outputDir));
 
 app.use((req, res, next) => {
   const start = Date.now();
+  const urlPath = (req.path || req.originalUrl || '').toString();
+  const isNoisyStatic =
+    /^\/artifacts\//.test(urlPath) ||
+    /^\/.well-known\//.test(urlPath) ||
+    /\.(png|jpe?g|gif|webp|svg|ico|css|js|map|woff2?|ttf|otf)$/i.test(urlPath);
   res.on('finish', () => {
+    if (isNoisyStatic) return; // suppress static noise
     const duration = Date.now() - start;
     console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
   });
   next();
 });
+
+// Configure global HTTP timeouts for long-running generator requests
+try {
+  const headersTimeout = Number(process.env.FETCH_HEADERS_TIMEOUT_MS || 600000); // 10 minutes
+  const bodyTimeout = Number(process.env.FETCH_BODY_TIMEOUT_MS || 0); // 0 = disable body timeout
+  setGlobalDispatcher(new Agent({ headersTimeout, bodyTimeout }));
+  console.log(`[HTTP] Undici timeouts set: headers=${headersTimeout}ms body=${bodyTimeout}ms`);
+} catch (e) {
+  console.warn('[HTTP] Failed to set Undici global dispatcher:', e instanceof Error ? e.message : String(e));
+}
 
 let inFlightRuns = 0;
 const runGate = async <T>(res: express.Response, handler: () => Promise<T>): Promise<T | undefined> => {

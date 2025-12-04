@@ -31,6 +31,14 @@ export type AssetScanResult = {
     heading?: string;
     images: Array<{ kind: 'img' | 'background'; url: string; localPath?: string; alt?: string; width?: number; height?: number }>
   }>;
+  sectionSpecs?: Array<{
+    name: string;
+    selector: string;
+    heading?: string;
+    layoutHint?: string;
+    rect?: { x: number; y: number; width: number; height: number };
+    images: Array<{ kind: 'img' | 'background'; url: string; localPath?: string; alt?: string; width?: number; height?: number }>;
+  }>;
 };
 
 const hash = (input: string | Buffer) => crypto.createHash('sha1').update(input).digest('hex').slice(0, 10);
@@ -125,7 +133,7 @@ export const scanBaseAssets = async (
       // Capture CSS text for @font-face extraction
       if (ct.includes('text/css')) {
         let text = '';
-        try { text = await response.text(); } catch {}
+        try { text = await response.text(); } catch { }
         if (text && /@font-face/i.test(text)) {
           cssTexts.push({ url, text });
           cssSeen.push({ url, captured: true });
@@ -145,7 +153,7 @@ export const scanBaseAssets = async (
           await safeWrite(path.join(outDir, localPath), buf);
           fontUrlToLocal.set(url, localPath);
           capturedFonts.push({ url, localPath, contentType: ct, bytes: buf.length });
-        } catch {}
+        } catch { }
         return;
       }
 
@@ -159,10 +167,10 @@ export const scanBaseAssets = async (
           await safeWrite(path.join(outDir, localPath), buf);
           imageUrlToLocal.set(url, localPath);
           capturedImages.push({ url, localPath, contentType: ct, bytes: buf.length });
-        } catch {}
+        } catch { }
         return;
       }
-    } catch {}
+    } catch { }
   };
 
   page.on('response', handleResponse);
@@ -218,7 +226,7 @@ export const scanBaseAssets = async (
     for (const node of bgNodes) {
       const cs = window.getComputedStyle(node);
       const bg = cs.getPropertyValue('background-image');
-      const urls = (bg.match(/url\(([^)]+)\)/g) || []).map((m) => m.replace(/^url\((.*)\)$/,'$1').replace(/^["']|["']$/g, ''));
+      const urls = (bg.match(/url\(([^)]+)\)/g) || []).map((m) => m.replace(/^url\((.*)\)$/, '$1').replace(/^["']|["']$/g, ''));
       for (const u of urls) {
         bgImages.push({ url: u, rect: node.getBoundingClientRect() });
       }
@@ -258,15 +266,49 @@ export const scanBaseAssets = async (
       return s;
     };
 
+    const getLayoutHint = (el: HTMLElement): string => {
+      const rect = el.getBoundingClientRect();
+      const winW = window.innerWidth;
+      if (rect.width >= winW * 0.95) return 'full-width';
+
+      // Check for grid/columns by looking at children
+      const children = Array.from(el.children).filter(c => {
+        const r = c.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      });
+
+      if (children.length > 1) {
+        const top0 = children[0].getBoundingClientRect().top;
+        const sameRow = children.filter(c => Math.abs(c.getBoundingClientRect().top - top0) < 10);
+        if (sameRow.length > 1 && sameRow.length < children.length) return 'grid'; // multiple rows
+        if (sameRow.length === children.length && children.length > 1) return 'columns'; // single row multiple cols
+      }
+
+      const style = window.getComputedStyle(el);
+      if (style.display === 'grid') return 'grid';
+      if (style.display === 'flex' && style.flexDirection === 'row') return 'columns';
+
+      return 'standard';
+    };
+
     const sections = sectionNodes.map((el) => ({
       name: nameFromEl(el),
       selector: selectorFor(el),
       rect: el.getBoundingClientRect(),
-      heading: (el.querySelector('h1, h2, h3')?.textContent || '').trim().slice(0, 60)
+      heading: (el.querySelector('h1, h2, h3')?.textContent || '').trim().slice(0, 60),
+      layoutHint: getLayoutHint(el)
     }));
 
     // Map images to nearest section by containment of center point
-    const sectionMappings = sections.map((sec) => ({ name: sec.name, selector: sec.selector, heading: sec.heading, images: [] as Array<any> }));
+    const sectionMappings = sections.map((sec) => ({
+      name: sec.name,
+      selector: sec.selector,
+      heading: sec.heading,
+      layoutHint: sec.layoutHint,
+      rect: { x: sec.rect.x, y: sec.rect.y, width: sec.rect.width, height: sec.rect.height },
+      images: [] as Array<any>
+    }));
+
     const contains = (r: DOMRect, x: number, y: number) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
     for (const img of images) {
       const cx = img.rect.left + img.rect.width / 2;
@@ -294,7 +336,7 @@ export const scanBaseAssets = async (
     }
 
     // Collect candidate palette from a set of elements
-    const colorSelectors = ['body','header','main','footer','section','h1','h2','h3','p','a','button'];
+    const colorSelectors = ['body', 'header', 'main', 'footer', 'section', 'h1', 'h2', 'h3', 'p', 'a', 'button'];
     const colors = new Set<string>();
     const backgrounds = new Set<string>();
     for (const sel of colorSelectors) {
@@ -310,7 +352,7 @@ export const scanBaseAssets = async (
       result,
       logoSrc: logoCandidate?.src || '',
       iconHref,
-      images: images.map(i => ({ src: i.src, alt: i.alt, width: i.width, height: i.height, rect: {x: i.rect.x, y: i.rect.y, width: i.rect.width, height: i.rect.height} })),
+      images: images.map(i => ({ src: i.src, alt: i.alt, width: i.width, height: i.height, rect: { x: i.rect.x, y: i.rect.y, width: i.rect.width, height: i.rect.height } })),
       bgImages: bgImages.map(b => ({ url: b.url, rect: { x: b.rect.x, y: b.rect.y, width: b.rect.width, height: b.rect.height } })),
       palette: { colors: Array.from(colors), backgrounds: Array.from(backgrounds) },
       sections,
@@ -404,7 +446,7 @@ export const scanBaseAssets = async (
   for (const sel of Object.keys(typ)) {
     const ff = typ[sel]['font-family'];
     if (ff) {
-      ff.split(',').map(s => s.trim().replace(/^"|"$/g,'').replace(/^'|'$/g,'')).forEach(t => { if (t) fontFamiliesSet.add(t); });
+      ff.split(',').map(s => s.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '')).forEach(t => { if (t) fontFamiliesSet.add(t); });
     }
   }
 
@@ -441,6 +483,21 @@ export const scanBaseAssets = async (
       name: s.name,
       selector: s.selector,
       heading: s.heading,
+      images: (s.images || []).map((im: any) => ({
+        kind: im.kind,
+        url: im.url,
+        localPath: imageUrlToLocal.get(im.url),
+        alt: im.alt,
+        width: im.width,
+        height: im.height,
+      }))
+    })),
+    sectionSpecs: (typography.sectionMappings || []).map((s: any) => ({
+      name: s.name,
+      selector: s.selector,
+      heading: s.heading,
+      layoutHint: s.layoutHint,
+      rect: s.rect,
       images: (s.images || []).map((im: any) => ({
         kind: im.kind,
         url: im.url,
