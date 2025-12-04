@@ -11,7 +11,6 @@ import { buildLinksForReport, storage } from './storage';
 import { cleanupArtifacts } from './cleanup';
 import { recordRun, renderMetrics } from './metrics';
 import { supabase, db, isSupabaseConfigured } from './supabase';
-import { Agent, setGlobalDispatcher } from 'undici';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
@@ -41,9 +40,11 @@ app.use((req, res, next) => {
 
 // Configure global HTTP timeouts for long-running generator requests
 try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const undici = require('undici');
   const headersTimeout = Number(process.env.FETCH_HEADERS_TIMEOUT_MS || 600000); // 10 minutes
   const bodyTimeout = Number(process.env.FETCH_BODY_TIMEOUT_MS || 0); // 0 = disable body timeout
-  setGlobalDispatcher(new Agent({ headersTimeout, bodyTimeout }));
+  undici.setGlobalDispatcher(new undici.Agent({ headersTimeout, bodyTimeout }));
   console.log(`[HTTP] Undici timeouts set: headers=${headersTimeout}ms body=${bodyTimeout}ms`);
 } catch (e) {
   console.warn('[HTTP] Failed to set Undici global dispatcher:', e instanceof Error ? e.message : String(e));

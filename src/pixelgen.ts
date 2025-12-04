@@ -143,11 +143,13 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
     };
     const createModel = process.env.GENERATOR_CREATE_MODEL || 'gemini-3-pro-preview';
     const updateModel = process.env.GENERATOR_UPDATE_MODEL || 'gemini-2.5-flash';
+    const GEN_RETRIES = Number(process.env.GENERATOR_RETRIES || 3);
+    const GEN_RETRY_BASE_MS = Number(process.env.GENERATOR_RETRY_BASE_MS || 1000);
     const createRes = await withRetry(() => fetch(`${GENERATOR_API_URL}/api/generate-from-image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(Object.assign({ stack, image: desktopBaseDataUrl, model: createModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
-    }));
+    }), GEN_RETRIES, GEN_RETRY_BASE_MS);
 
     if (!createRes.ok) {
         let detail = '';
@@ -186,7 +188,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
             const updateRes = await withRetry(() => fetch(`${GENERATOR_API_URL}/api/update-from-diff`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(Object.assign({ stack, currentBundle, instructions, images: [desktopBaseDataUrl], model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
-            }));
+            }), GEN_RETRIES, GEN_RETRY_BASE_MS);
             if (!updateRes.ok) {
                 let detail = '';
                 try { detail = await updateRes.text(); } catch { }
@@ -285,7 +287,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                     const compileRes = await withRetry(() => fetch(`${GENERATOR_API_URL}/api/update-from-diff`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(Object.assign({ stack, currentBundle, instructions: compileOnly, images: (health.screenshotDataUrl ? [health.screenshotDataUrl] : []), model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
-                    }));
+                    }), GEN_RETRIES, GEN_RETRY_BASE_MS);
                     if (compileRes.ok) {
                         const data = await compileRes.json();
                         currentBundle = data.bundle;
@@ -362,7 +364,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                 const fixRes = await withRetry(() => fetch(`${GENERATOR_API_URL}/api/update-from-diff`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(Object.assign({ stack, currentBundle, instructions: compileOnly, images: (lastHealth?.screenshotDataUrl ? [lastHealth!.screenshotDataUrl] : []), model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
-                }));
+                }), GEN_RETRIES, GEN_RETRY_BASE_MS);
                 if (!fixRes.ok) {
                     let detail = '';
                     try { detail = await fixRes.text(); } catch { }
@@ -615,7 +617,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(Object.assign({ stack, currentBundle, instructions, images: updateImages, model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
-                }));
+                }), GEN_RETRIES, GEN_RETRY_BASE_MS);
                 if (!updateRes.ok) {
                     let detail = '';
                     try { detail = await updateRes.text(); } catch { }
@@ -657,7 +659,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(Object.assign({ stack, currentBundle, instructions, images: updateImages, model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
-            }));
+            }), GEN_RETRIES, GEN_RETRY_BASE_MS);
 
             if (!updateRes.ok) {
                 let detail = '';
