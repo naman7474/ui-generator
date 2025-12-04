@@ -1,9 +1,0 @@
-import { ChevronRight } from 'https://esm.sh/react@18?dev';
-
-import React from 'https://esm.sh/react@18?dev';
-function BrandInfo() {
-  return /* @__PURE__ */ React.createElement("section", { className: "py-16 bg-white" }, /* @__PURE__ */ React.createElement("div", { className: "container mx-auto px-4 grid md:grid-cols-2 gap-12" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "text-xl font-bold text-dark mb-4" }, "Aqualogica's Skincare Products with a Powerful Blend of Fruits & Actives"), /* @__PURE__ */ React.createElement("p", { className: "text-medium text-sm leading-relaxed mb-4" }, "With our extensively researched clinical actives and the benefits of natural fruits, our products truly carry the power of two to give you the best of both worlds for fresh, glowing skin."), /* @__PURE__ */ React.createElement("a", { href: "#", className: "text-primary font-bold text-sm flex items-center gap-1 hover:underline" }, "LEARN MORE ", /* @__PURE__ */ React.createElement(ChevronRight, { className: "w-4 h-4" }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "text-xl font-bold text-dark mb-4" }, "Water for All!"), /* @__PURE__ */ React.createElement("h4", { className: "font-bold text-medium mb-2" }, "Every time you buy from us, you help one person get access to clean drinking water!"), /* @__PURE__ */ React.createElement("p", { className: "text-medium text-sm leading-relaxed mb-4" }, "Our mission is to provide Safe Drinking Water to Everyone"), /* @__PURE__ */ React.createElement("a", { href: "#", className: "text-primary font-bold text-sm flex items-center gap-1 hover:underline" }, "LEARN MORE ", /* @__PURE__ */ React.createElement(ChevronRight, { className: "w-4 h-4" })))));
-}
-export {
-  BrandInfo as default
-};

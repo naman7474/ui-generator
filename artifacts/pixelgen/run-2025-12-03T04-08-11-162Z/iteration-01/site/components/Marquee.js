@@ -1,7 +1,0 @@
-import React from "https://esm.sh/react@18";
-function Marquee() {
-  return /* @__PURE__ */ React.createElement("div", { className: "bg-[#F9EBE6] py-3 overflow-hidden whitespace-nowrap border-b border-[#e8d5d1]" }, /* @__PURE__ */ React.createElement("div", { className: "inline-block animate-marquee text-xs text-[#C04B28] font-bold tracking-[0.2em] uppercase" }, /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "Clean Label"), " |", /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "All-In-One Masalas"), " |", /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "100% Clean Label"), " |", /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "All-In-One Masalas"), " |", /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "Clean Label"), " |", /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "All-In-One Masalas"), " |", /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "100% Clean Label"), " |", /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "All-In-One Masalas"), " |", /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "Clean Label"), " |", /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "All-In-One Masalas"), " |", /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "100% Clean Label"), " |", /* @__PURE__ */ React.createElement("span", { className: "mx-6" }, "All-In-One Masalas")));
-}
-export {
-  Marquee as default
-};
