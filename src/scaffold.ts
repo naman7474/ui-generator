@@ -1,10 +1,41 @@
+/**
+ * scaffold.ts - PATCHED VERSION
+ * 
+ * Ensures import map URLs match those used in react-host.ts
+ */
+
 import fs from 'fs/promises';
 import path from 'path';
 import { ensureDir } from './utils';
 import { config } from './config';
 import { getLocalArtifactUrl } from './utils';
 
-const INDEX_HTML = `<!DOCTYPE html>
+// ============================================================================
+// CONFIGURATION - Must match react-host.ts exactly
+// ============================================================================
+const getReactCdnConfig = () => {
+  const dev = process.env.REACT_DEV === 'true' || process.env.NODE_ENV !== 'production';
+  const target = 'es2018';
+
+  return {
+    dev,
+    target,
+    react: dev
+      ? `https://esm.sh/react@18?dev&target=${target}`
+      : `https://esm.sh/react@18?target=${target}`,
+    reactDomClient: dev
+      ? `https://esm.sh/react-dom@18/client?dev&target=${target}`
+      : `https://esm.sh/react-dom@18/client?target=${target}`,
+    lucideReact: dev
+      ? `https://esm.sh/lucide-react@0.555.0?deps=react@18,react-dom@18&dev&target=${target}`
+      : `https://esm.sh/lucide-react@0.555.0?deps=react@18,react-dom@18&target=${target}`,
+  };
+};
+
+// Generate INDEX_HTML dynamically to ensure CDN URLs match
+const getIndexHtml = (): string => {
+  const cdn = getReactCdnConfig();
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -16,9 +47,9 @@ const INDEX_HTML = `<!DOCTYPE html>
   <script type="importmap">
   {
     "imports": {
-      "react": "https://esm.sh/react@18?dev&target=es2018",
-      "react-dom/client": "https://esm.sh/react-dom@18/client?dev&target=es2018",
-      "lucide-react": "https://esm.sh/lucide-react@0.555.0?deps=react@18,react-dom@18&dev&target=es2018"
+      "react": "${cdn.react}",
+      "react-dom/client": "${cdn.reactDomClient}",
+      "lucide-react": "${cdn.lucideReact}"
     }
   }
   <\/script>
@@ -28,10 +59,19 @@ const INDEX_HTML = `<!DOCTYPE html>
   <script type="module" src="./main.js"></script>
 </body>
 </html>`;
+};
 
-const MAIN_JS = `import React from 'react';
-import { createRoot } from 'react-dom/client';
+const getMainJs = (sectionNames: string[] = []): string => {
+  const cdn = getReactCdnConfig();
+  const imports = sectionNames.map(n => `import ${n} from './components/${n}.js';`).join('\n');
+  const register = `window.__SECTIONS__ = [${sectionNames.join(', ')}];`;
+
+  return `import React from '${cdn.react}';
+import { createRoot } from '${cdn.reactDomClient}';
 import App from './App.js';
+${imports}
+
+${register}
 
 const mount = () => {
   const container = document.getElementById('root');
@@ -43,7 +83,7 @@ const mount = () => {
 // After mount, hydrate any <i data-icon="IconName"> placeholders using lucide-react
 const hydrateIcons = async () => {
   try {
-    const Icons = await import('lucide-react');
+    const Icons = await import('${cdn.lucideReact}');
     const placeholders = Array.from(document.querySelectorAll('i[data-icon]'));
     for (const el of placeholders) {
       const name = el.getAttribute('data-icon') || 'Circle';
@@ -63,123 +103,87 @@ const attachImageFallbacks = () => {
     try {
       const mani = (window.__ASSET_MANIFEST__ && window.__ASSET_MANIFEST__.images) || {};
       const vals = Object.values(mani);
-      return vals.length ? String(vals[0]) : undefined;
-    } catch { return undefined; }
+      return vals.length ? vals[0] : null;
+    } catch { return null; }
   };
-  const onerr = (e) => {
-    const fb = pickFallback();
-    if (fb && e && e.target && !e.target.__fb) {
-      e.target.__fb = true;
-      e.target.src = fb;
-    }
-  };
-  const wire = (img) => { try { img.addEventListener('error', onerr, { once: false }); } catch {} };
-  Array.from(document.querySelectorAll('img')).forEach(wire);
-  const mo = new MutationObserver((muts) => {
-    muts.forEach((m) => {
-      m.addedNodes && m.addedNodes.forEach((n) => {
-        if (n && n.tagName === 'IMG') wire(n);
-        if (n && n.querySelectorAll) Array.from(n.querySelectorAll('img')).forEach(wire);
-      });
-    });
+  document.querySelectorAll('img').forEach(img => {
+    img.onerror = () => {
+      const fb = pickFallback();
+      if (fb && img.src !== fb) img.src = fb;
+    };
   });
-  try { mo.observe(document.documentElement, { childList: true, subtree: true }); } catch {}
 };
 
 mount();
 hydrateIcons();
 attachImageFallbacks();
 `;
+};
 
-const APP_JS = `import React from 'react';
-import Section from './components/Section.js';
+const getAppJs = (): string => {
+  const cdn = getReactCdnConfig();
+  return `import React from '${cdn.react}';
 
 export default function App({ sections = [] }) {
-  return React.createElement(
-    'div',
-    { className: 'min-h-screen bg-white text-gray-900' },
-    ...sections.map((html, i) => React.createElement(Section, { key: i, html }))
+  if (sections.length === 0) {
+    return React.createElement('div', { className: 'p-8 text-center text-gray-500' }, 
+      'No sections loaded. Check console for errors.'
+    );
+  }
+  
+  return React.createElement('div', { id: 'app-root' },
+    sections.map((Section, i) => 
+      React.createElement(Section, { key: i })
+    )
   );
 }
 `;
-
-const SECTION_JS = `import React from 'react';
-
-export default function Section({ html }) {
-  return React.createElement('section', {
-    dangerouslySetInnerHTML: { __html: html }
-  });
-}
-`;
-
-const IMAGE_WITH_FALLBACK_JS = `import React from 'react';
-import { resolveAsset } from '../utils/assets.js';
-
-export default function ImageWithFallback({ src, alt = '', ...rest }) {
-  const resolved = resolveAsset(src) || src;
-  const onError = (e) => {
-    try {
-      const manifest = (window.__ASSET_MANIFEST__ && window.__ASSET_MANIFEST__.images) || {};
-      const any = Object.values(manifest)[0];
-      if (any) e.currentTarget.src = any;
-    } catch {}
-  };
-  return React.createElement('img', { src: resolved, alt, onError, ...rest });
-}
-`;
-
-const ICON_JS = `import React from 'react';
-import * as Icons from 'lucide-react';
-
-export default function Icon({ name = 'Circle', ...props }) {
-  const Comp = Icons[name] || Icons['Circle'];
-  return React.createElement(Comp, props);
-}
-`;
-
-const ASSETS_UTIL_JS = `export const resolveAsset = (keyOrUrl) => {
-  try {
-    const m = (window.__ASSET_MANIFEST__ && window.__ASSET_MANIFEST__.images) || {};
-    if (keyOrUrl && m[keyOrUrl]) return m[keyOrUrl];
-    return keyOrUrl;
-  } catch { return keyOrUrl; }
 };
+
+const FONTS_CSS = `/* Font definitions - populated by asset scanner */
 `;
 
 export const writeBaseReactScaffold = async (
-  siteDir: string,
-  sectionsHtml: string[]
-): Promise<{ entryPath: string; localUrl: string }> => {
+  runDir: string,
+  sections: string[] = []
+): Promise<{ localUrl: string; entryPath: string; siteDir: string }> => {
+  const siteDir = path.join(runDir, 'site');
   await ensureDir(siteDir);
+
+  // Write scaffold files
   const indexPath = path.join(siteDir, 'index.html');
   const mainPath = path.join(siteDir, 'main.js');
   const appPath = path.join(siteDir, 'App.js');
-  const componentsDir = path.join(siteDir, 'components');
-  const utilsDir = path.join(siteDir, 'utils');
+  const fontsPath = path.join(siteDir, 'fonts.css');
 
-  await ensureDir(componentsDir);
-  await ensureDir(utilsDir);
+  // Create assets directories
+  await ensureDir(path.join(siteDir, 'assets', 'images'));
+  await ensureDir(path.join(siteDir, 'assets', 'fonts'));
+  await ensureDir(path.join(siteDir, 'components'));
 
-  // Write base files
-  await fs.writeFile(indexPath, INDEX_HTML, 'utf8');
-  await fs.writeFile(mainPath, MAIN_JS, 'utf8');
-  await fs.writeFile(appPath, APP_JS, 'utf8');
-  await fs.writeFile(path.join(componentsDir, 'Section.js'), SECTION_JS, 'utf8');
-  await fs.writeFile(path.join(componentsDir, 'ImageWithFallback.js'), IMAGE_WITH_FALLBACK_JS, 'utf8');
-  await fs.writeFile(path.join(componentsDir, 'Icon.js'), ICON_JS, 'utf8');
-  await fs.writeFile(path.join(utilsDir, 'assets.js'), ASSETS_UTIL_JS, 'utf8');
+  // Generate section components
+  const sectionNames: string[] = [];
+  for (let i = 0; i < sections.length; i++) {
+    const name = `Section${i}`;
+    sectionNames.push(name);
+    const compContent = `import React from '${getReactCdnConfig().react}';
+export default function ${name}() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: \`${sections[i].replace(/`/g, '\\`').replace(/\$/g, '\\$')}\` }
+  });
+}`;
+    await fs.writeFile(path.join(siteDir, 'components', `${name}.js`), compContent);
+  }
 
-  // Inject sections into index.html via window.__SECTIONS__
-  const html = await fs.readFile(indexPath, 'utf8');
-  const headEndIdx = html.indexOf('</head>');
-  const sectionsScript = `<script>window.__SECTIONS__ = ${JSON.stringify(sectionsHtml)};<\/script>`;
-  const newHtml = headEndIdx >= 0
-    ? `${html.slice(0, headEndIdx)}  ${sectionsScript}\n${html.slice(headEndIdx)}`
-    : `${sectionsScript}\n${html}`;
-  await fs.writeFile(indexPath, newHtml, 'utf8');
+  await fs.writeFile(indexPath, getIndexHtml());
+  await fs.writeFile(mainPath, getMainJs(sectionNames));
+  await fs.writeFile(appPath, getAppJs());
+  await fs.writeFile(fontsPath, FONTS_CSS);
 
-  const entryDir = path.dirname(indexPath);
-  const relativeDir = path.relative(config.outputDir, entryDir);
+  const relativeDir = path.relative(config.outputDir, siteDir);
   const localUrl = getLocalArtifactUrl(path.join(relativeDir, 'index.html'));
-  return { entryPath: indexPath, localUrl };
+
+  return { localUrl, entryPath: indexPath, siteDir };
 };
+
+export { getReactCdnConfig };

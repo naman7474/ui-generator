@@ -83,12 +83,12 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
     let currentBundle: ReactBundle | undefined;
     // Track best-so-far bundle and scores to prevent regressions on locked metrics
     let bestBundle: ReactBundle | undefined;
-    const bestScores: Record<'desktop'|'mobile', { pixelmatch: number; ssim: number }> = {
+    const bestScores: Record<'desktop' | 'mobile', { pixelmatch: number; ssim: number }> = {
         desktop: { pixelmatch: 0, ssim: 0 },
         mobile: { pixelmatch: 0, ssim: 0 },
     };
-    const pixelLocked: Record<'desktop'|'mobile', boolean> = { desktop: false, mobile: false };
-    const ssimLocked: Record<'desktop'|'mobile', boolean> = { desktop: false, mobile: false };
+    const pixelLocked: Record<'desktop' | 'mobile', boolean> = { desktop: false, mobile: false };
+    const ssimLocked: Record<'desktop' | 'mobile', boolean> = { desktop: false, mobile: false };
     const LOCK_EPSILON = Number(process.env.LOCK_EPSILON || 0.001);
     let structureLock: string[] | undefined;
     let stopReason = '';
@@ -274,7 +274,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                         const whole = m[0];
                         const q = m[2];
                         const rel = (m[3] || '') + 'assets/images/' + m[4];
-                        const onDisk = path.join(siteDir, rel.replace(/^\//,''));
+                        const onDisk = path.join(siteDir, rel.replace(/^\//, ''));
                         let exists = false;
                         try { await fs.access(onDisk); exists = true; } catch { exists = false; }
                         if (!exists && placeholderFallback) {
@@ -285,6 +285,98 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                     }
                     return out;
                 })();
+                if (changed) await fs.writeFile(full, text, 'utf8');
+            }
+        };
+        await walk(siteDir);
+    };
+
+    const enforceIconImportsOnDisk = async (siteDir: string) => {
+        const exts = new Set(['.js', '.jsx', '.tsx']);
+        const lucideCdn = 'https://esm.sh/lucide-react@0.555.0?deps=react@18,react-dom@18&dev&target=es2018';
+        const allowedReactUpper = new Set([
+            'Fragment', 'StrictMode', 'Suspense', 'Profiler',
+            'Component', 'PureComponent', 'Children',
+            'createElement', 'cloneElement', 'isValidElement',
+            'createContext', 'forwardRef', 'lazy', 'memo', 'createRef',
+            'startTransition', 'useTransition', 'useDeferredValue',
+            'useId', 'useSyncExternalStore', 'useInsertionEffect',
+        ]);
+        const walk = async (dir: string) => {
+            const entries = await fs.readdir(dir, { withFileTypes: true });
+            for (const e of entries) {
+                const full = path.join(dir, e.name);
+                if (e.isDirectory()) { await walk(full); continue; }
+                if (!exts.has(path.extname(e.name).toLowerCase())) continue;
+                let text = await fs.readFile(full, 'utf8');
+                let changed = false;
+                const mergeLucide = (src: string): string => {
+                    const re = /(^|\n)\s*import\s*{\s*([^}]*?)\s*}\s*from\s*(["'])[^"']*lucide-react[^"']*\3\s*;?/;
+                    const m = src.match(re);
+                    if (!m) return `import { __LUCIDE_PLACEHOLDER__ } from '${lucideCdn}';\n` + src;
+                    return src;
+                };
+                const addLucideNames = (src: string, names: string[]): string => {
+                    if (names.length === 0) return src;
+                    // If placeholder import exists, swap it out
+                    if (src.includes('__LUCIDE_PLACEHOLDER__')) {
+                        const unique = Array.from(new Set(names)).join(', ');
+                        return src.replace(/import\s*{\s*__LUCIDE_PLACEHOLDER__\s*}\s*from\s*['"][^'"]*lucide-react[^'"]*['"];?/, `import { ${unique} } from '${lucideCdn}';`);
+                    }
+                    // Merge into existing lucide import if any
+                    const re = /(^|\n)\s*import\s*{\s*([^}]*?)\s*}\s*from\s*(["'])[^"']*lucide-react[^"']*\3\s*;?/;
+                    const m = src.match(re);
+                    if (m) {
+                        const cur = m[2].split(',').map(s => s.trim()).filter(Boolean);
+                        const merged = Array.from(new Set([...cur, ...names]));
+                        const rep = `${m[1]}import { ${merged.join(', ')} } from ${m[3]}${lucideCdn}${m[3]};`;
+                        return src.replace(m[0], rep);
+                    }
+                    // Else add new import at top
+                    const unique = Array.from(new Set(names)).join(', ');
+                    return `import { ${unique} } from '${lucideCdn}';\n` + src;
+                };
+                // react-dom and react-dom/client
+                text = text.replace(/(^|\n)\s*import\s*{\s*([^}]+?)\s*}\s*from\s*(["'])([^"']*react-dom[^"']*)\3\s*;?/g,
+                    (m: string, lb: string, names: string, q: string, spec: string) => {
+                        const parts = names.split(',').map(s => s.trim()).filter(Boolean);
+                        const keep: string[] = []; const toIcons: string[] = [];
+                        for (const p of parts) {
+                            const name = p.replace(/\sas\s+[A-Za-z_$][\w$]*$/, '').trim();
+                            if (/^createRoot$/.test(name)) keep.push(p);
+                            else if (/^[A-Z]/.test(name)) toIcons.push(name);
+                            else keep.push(p);
+                        }
+                        if (toIcons.length) {
+                            changed = true;
+                            let out = '';
+                            if (keep.length) out = `${lb}import { ${keep.join(', ')} } from ${q}${spec}${q};`;
+                            let src2 = mergeLucide(out || '');
+                            src2 = addLucideNames(src2, toIcons);
+                            return src2;
+                        }
+                        return m;
+                    }
+                );
+                // react
+                text = text.replace(/(^|\n)\s*import\s*{\s*([^}]+?)\s*}\s*from\s*(["'])\s*(?:https?:\/\/esm\.sh\/)?react@?[^"']*\3\s*;?/g,
+                    (m: string, lb: string, names: string, q: string) => {
+                        const parts = names.split(',').map(s => s.trim()).filter(Boolean);
+                        const keep: string[] = []; const toIcons: string[] = [];
+                        for (const p of parts) {
+                            const name = p.replace(/\sas\s+[A-Za-z_$][\w$]*$/, '').trim();
+                            if (/^[A-Z]/.test(name) && !allowedReactUpper.has(name)) toIcons.push(name); else keep.push(p);
+                        }
+                        if (toIcons.length) {
+                            changed = true;
+                            const kept = keep.length ? `${lb}import { ${keep.join(', ')} } from ${q}https://esm.sh/react@18?dev&target=es2018${q};` : '';
+                            let src2 = mergeLucide(kept);
+                            src2 = addLucideNames(src2, toIcons);
+                            return src2;
+                        }
+                        return m;
+                    }
+                );
                 if (changed) await fs.writeFile(full, text, 'utf8');
             }
         };
@@ -331,7 +423,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                         const sectionsHtml: string[] = [];
                         for (const spec of baseAssets.sectionSpecs) {
                             const secName = spec.name || 'Section';
-                            const secType = (/header/i.test(secName) ? 'header' : /hero|banner/i.test(secName) ? 'hero' : /feature/i.test(secName) ? 'features' : /footer/i.test(secName) ? 'footer' : 'content') as 'header'|'hero'|'features'|'footer'|'content';
+                            const secType = (/header/i.test(secName) ? 'header' : /hero|banner/i.test(secName) ? 'hero' : /feature/i.test(secName) ? 'features' : /footer/i.test(secName) ? 'footer' : 'content') as 'header' | 'hero' | 'features' | 'footer' | 'content';
                             const rect = spec.rect || { x: 0, y: 0, width: basePng.width, height: Math.min(600, basePng.height) };
                             const cropped = cropToDataUrl(rect);
 
@@ -341,7 +433,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                                 width: im.width,
                                 height: im.height,
                             }));
-                            const icons: string[] = ['ShoppingCart','Menu','X','ChevronDown','Search','User','Heart'];
+                            const icons: string[] = ['ShoppingCart', 'Menu', 'X', 'ChevronDown', 'Search', 'User', 'Heart'];
                             const textContent = spec.textContent || { headings: [], paragraphs: [], buttons: [] };
 
                             let generated: GeneratedSection;
@@ -438,8 +530,9 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                 const entryDir = path.dirname(entryPath);
                 const map = buildImageMap(baseAssets);
                 const fallback = baseAssets.heroCandidate ? `./${baseAssets.heroCandidate.replace(/\\/g, '/')}`
-                              : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
+                    : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
                 await rewriteImageSourcesOnDisk(entryDir, map, fallback);
+                await enforceIconImportsOnDisk(entryDir);
             }
         } catch (e) {
             const errMsg = e instanceof Error ? e.message : String(e);
@@ -474,8 +567,9 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                 const entryDir = path.dirname(entryPath);
                 const map = buildImageMap(baseAssets);
                 const fallback = baseAssets.heroCandidate ? `./${baseAssets.heroCandidate.replace(/\\/g, '/')}`
-                              : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
+                    : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
                 await rewriteImageSourcesOnDisk(entryDir, map, fallback);
+                await enforceIconImportsOnDisk(entryDir);
             }
         }
 
@@ -588,7 +682,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                         ...((health.pageErrors || []).map(e => `- ${e}`)),
                         ...((health.console || []).filter(c => c.type === 'error').slice(0, 6).map(c => `- console.error: ${c.text}`)),
                     ].join('\n');
-                    const compileCtx = currentBundle ? undefined : await fs.readFile(path.join(iterDir, 'site-context.txt'), 'utf8').catch(()=>'');
+                    const compileCtx = currentBundle ? undefined : await fs.readFile(path.join(iterDir, 'site-context.txt'), 'utf8').catch(() => '');
                     const compileRes = await withRetry(() => fetch(`${GENERATOR_API_URL}/api/update-from-diff`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(Object.assign({ stack, currentBundle, currentHtml: compileCtx, instructions: compileOnly, images: (health.screenshotDataUrl ? [health.screenshotDataUrl] : []), model: updateModel, sectionSpecs: baseAssets?.sectionSpecs }, useChat ? { history: chatHistory } : {}))
@@ -604,8 +698,9 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                                 // Ensure images use local assets paths
                                 const map2 = buildImageMap(baseAssets);
                                 const fallback2 = baseAssets.heroCandidate ? `./${baseAssets.heroCandidate.replace(/\\/g, '/')}`
-                                                : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
+                                    : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
                                 await rewriteImageSourcesOnDisk(entryDir2, map2, fallback2);
+                                await enforceIconImportsOnDisk(entryDir2);
                                 await injectAssetsIntoHtml(rewritten2.entryPath, entryDir2, baseAssets);
                             }
                         } catch (e) {
@@ -712,18 +807,18 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                     console.warn('[PixelGen] Structure change detected vs lock; reverting to previous best and skipping update.');
                     if (bestBundle) {
                         const rewritten = await writeReactBundle(iterDir, bestBundle);
-                        try { if (baseAssets) { await injectAssetsIntoHtml(rewritten.entryPath, path.dirname(rewritten.entryPath), baseAssets); } } catch {}
+                        try { if (baseAssets) { await injectAssetsIntoHtml(rewritten.entryPath, path.dirname(rewritten.entryPath), baseAssets); } } catch { }
                         const recheck = await preflightCheck(localUrl, { allowedImageSuffixes, allowedFontTokens, allowedColors });
                         lastHealth = recheck;
                     }
                 }
             }
-        } catch {}
+        } catch { }
 
         // Compare (phase-aware)
         const deviceArtifacts: DeviceArtifacts[] = [];
         const similarities: Record<string, number> = {};
-        const deviceScores: Record<'desktop'|'mobile', { pixelmatch: number; ssim: number }> = {} as any;
+        const deviceScores: Record<'desktop' | 'mobile', { pixelmatch: number; ssim: number }> = {} as any;
         const activeDevices: ('desktop' | 'mobile')[] = phase === 'desktop' ? ['desktop'] : phase === 'mobile' ? ['mobile'] : devices;
 
         const similarityMetric = (process.env.SIMILARITY_METRIC || 'pixelmatch').toLowerCase();
@@ -753,7 +848,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
 
             const pixelSim = comparison.diff.similarity;
             let ssimSim = pixelSim;
-            try { ssimSim = await computeSSIMOnPaths(comparison.base.screenshotPath, comparison.target.screenshotPath); } catch {}
+            try { ssimSim = await computeSSIMOnPaths(comparison.base.screenshotPath, comparison.target.screenshotPath); } catch { }
             deviceScores[device] = { pixelmatch: pixelSim, ssim: ssimSim };
             console.log(`[PixelGen] ${device} similarity → pixelmatch=${pixelSim.toFixed(4)} ssim=${ssimSim.toFixed(4)}`);
             const use = similarityMetric === 'pixelmatch' ? pixelSim : ssimSim;
@@ -787,7 +882,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
         }
 
         // Lock metrics once thresholds are reached; do not allow regressions beyond epsilon
-        (['desktop','mobile'] as const).forEach((d) => {
+        (['desktop', 'mobile'] as const).forEach((d) => {
             const sc = deviceScores[d];
             if (!sc) return;
             if (sc.pixelmatch >= pxMin) pixelLocked[d] = true;
@@ -796,7 +891,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
 
         // Detect regression against best-so-far on any locked metric
         let regressed = false;
-        (['desktop','mobile'] as const).forEach((d) => {
+        (['desktop', 'mobile'] as const).forEach((d) => {
             const sc = deviceScores[d];
             if (!sc) return;
             if (pixelLocked[d] && sc.pixelmatch < (bestScores[d].pixelmatch - LOCK_EPSILON)) regressed = true;
@@ -811,7 +906,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
 
         // If no regression, update best when any device metric improves
         let improved = false;
-        (['desktop','mobile'] as const).forEach((d) => {
+        (['desktop', 'mobile'] as const).forEach((d) => {
             const sc = deviceScores[d];
             if (!sc) return;
             if (sc.pixelmatch > bestScores[d].pixelmatch + LOCK_EPSILON) { bestScores[d].pixelmatch = sc.pixelmatch; improved = true; }
@@ -826,15 +921,15 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
         if (similarityMetric === 'hybrid') {
             if (phase === 'desktop') phasePassed = (deviceScores.desktop?.ssim ?? 0) >= ssimGood;
             else if (phase === 'mobile') phasePassed = (deviceScores.mobile?.ssim ?? 0) >= ssimGood;
-            else phasePassed = devices.every(d => (deviceScores[d as 'desktop'|'mobile']?.ssim ?? 0) >= ssimDone) && devices.every(d => (deviceScores[d as 'desktop'|'mobile']?.pixelmatch ?? 0) >= pxMin);
+            else phasePassed = devices.every(d => (deviceScores[d as 'desktop' | 'mobile']?.ssim ?? 0) >= ssimDone) && devices.every(d => (deviceScores[d as 'desktop' | 'mobile']?.pixelmatch ?? 0) >= pxMin);
         } else if (similarityMetric === 'ssim') {
             if (phase === 'desktop') phasePassed = (deviceScores.desktop?.ssim ?? 0) >= ssimGood;
             else if (phase === 'mobile') phasePassed = (deviceScores.mobile?.ssim ?? 0) >= ssimGood;
-            else phasePassed = devices.every(d => (deviceScores[d as 'desktop'|'mobile']?.ssim ?? 0) >= ssimDone);
+            else phasePassed = devices.every(d => (deviceScores[d as 'desktop' | 'mobile']?.ssim ?? 0) >= ssimDone);
         } else {
             if (phase === 'desktop') phasePassed = (deviceScores.desktop?.pixelmatch ?? 0) >= pxMin;
             else if (phase === 'mobile') phasePassed = (deviceScores.mobile?.pixelmatch ?? 0) >= pxMin;
-            else phasePassed = devices.every(d => (deviceScores[d as 'desktop'|'mobile']?.pixelmatch ?? 0) >= pxMin);
+            else phasePassed = devices.every(d => (deviceScores[d as 'desktop' | 'mobile']?.pixelmatch ?? 0) >= pxMin);
         }
 
         if (phasePassed || phaseRemaining <= 0) {
@@ -886,7 +981,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
         let targetedUpdateIssued = false;
         let decision: 'regression-skip' | 'section-update' | 'global-update' | 'none' = 'none';
         if (baseAssets?.sectionSpecs && baseAssets.sectionSpecs.length) {
-            const worst: { device: 'desktop'|'mobile'; name: string; score: number; basePath: string; targetPath: string; diffPath: string } | null = await (async () => {
+            const worst: { device: 'desktop' | 'mobile'; name: string; score: number; basePath: string; targetPath: string; diffPath: string } | null = await (async () => {
                 let best: any = null;
                 for (const dev of activeDevices) {
                     const results = await captureSectionScreenshotsForDevice(options.baseUrl, localUrl, dev, baseAssets.sectionSpecs!, path.join(iterDir, dev, 'sections'));
@@ -965,7 +1060,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                 updateImages.push(`data:image/png;base64,${diffBuf.toString('base64')}`);
             }
 
-            const globalCtx = currentBundle ? undefined : await fs.readFile(path.join(iterDir, 'site-context.txt'), 'utf8').catch(()=>'');
+            const globalCtx = currentBundle ? undefined : await fs.readFile(path.join(iterDir, 'site-context.txt'), 'utf8').catch(() => '');
             const updateRes = await withRetry(() => fetch(`${GENERATOR_API_URL}/api/update-from-diff`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -987,7 +1082,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
         // Iteration summary log (one compact line)
         const ds = deviceScores.desktop ? `D(pm=${deviceScores.desktop.pixelmatch.toFixed(3)},ssim=${deviceScores.desktop.ssim.toFixed(3)})` : 'D(-)';
         const ms = deviceScores.mobile ? `M(pm=${deviceScores.mobile.pixelmatch.toFixed(3)},ssim=${deviceScores.mobile.ssim.toFixed(3)})` : 'M(-)';
-        const locks = `locks:D(pm=${pixelLocked.desktop?'Y':'n'},ssim=${ssimLocked.desktop?'Y':'n'}),M(pm=${pixelLocked.mobile?'Y':'n'},ssim=${ssimLocked.mobile?'Y':'n'})`;
+        const locks = `locks:D(pm=${pixelLocked.desktop ? 'Y' : 'n'},ssim=${ssimLocked.desktop ? 'Y' : 'n'}),M(pm=${pixelLocked.mobile ? 'Y' : 'n'},ssim=${ssimLocked.mobile ? 'Y' : 'n'})`;
         console.log(`[PixelGen] Iteration ${i} summary -> phase=${phase}, devices=${activeDevices.join(',')}, ${ds}, ${ms}, ${locks}, decision=${decision}`);
     }
 
@@ -1058,7 +1153,7 @@ const findSectionElement = async (page: any, spec: { name: string; selector?: st
     const dataSelector = `[data-section="${(spec.name || '').replace(/"/g, '\\"')}"]`;
     let handle = null;
     if (preferDataAttr) {
-        try { handle = await page.$(dataSelector); } catch {}
+        try { handle = await page.$(dataSelector); } catch { }
         if (handle) return handle;
     }
     if (spec.selector) {
@@ -1069,7 +1164,7 @@ const findSectionElement = async (page: any, spec: { name: string; selector?: st
                 handle = await locator.elementHandle();
                 if (handle) return handle;
             }
-        } catch {}
+        } catch { }
     }
     if (spec.heading && spec.heading.length > 0) {
         try {
@@ -1084,7 +1179,7 @@ const findSectionElement = async (page: any, spec: { name: string; selector?: st
                 const el = jsHandle.asElement();
                 if (el) return el;
             }
-        } catch {}
+        } catch { }
     }
     return null;
 };
@@ -1130,7 +1225,7 @@ const computeSSIMFromPNGs = (a: PNG, b: PNG): number => {
             const m = typeof res === 'object' && res !== null && 'mssim' in res ? res.mssim : Number(res);
             if (Number.isFinite(m)) return Math.max(0, Math.min(1, Number(m)));
         }
-    } catch {}
+    } catch { }
     const width = Math.min(a.width, b.width);
     const height = Math.min(a.height, b.height);
     let sumX = 0, sumY = 0, sumX2 = 0, sumY2 = 0, sumXY = 0;
@@ -1202,17 +1297,17 @@ const preflightCheck = async (
                     const msg = `SYNTAX ERROR: ${e.message || ''} at ${e.filename || ''}:${e.lineno || 0}:${e.colno || 0}`;
                     // @ts-ignore
                     console.error(msg);
-                } catch {}
+                } catch { }
             });
             window.addEventListener('unhandledrejection', (e) => {
                 try {
                     const reason = (e && (e as any).reason) ? String((e as any).reason) : 'unhandledrejection';
                     // @ts-ignore
                     console.error(`UNHANDLED REJECTION: ${reason}`);
-                } catch {}
+                } catch { }
             });
         });
-    } catch {}
+    } catch { }
     const logs: PreflightResult['console'] = [];
     const pageErrors: string[] = [];
     const networkErrors: PreflightResult['networkErrors'] = [];
@@ -1255,7 +1350,7 @@ const preflightCheck = async (
         }
         try {
             sections = await page.evaluate(() => Array.from(document.querySelectorAll('[data-section]')).map(el => (el.getAttribute('data-section') || '').trim()).filter(Boolean));
-        } catch {}
+        } catch { }
         // Asset enforcement check inside the page
         const assets = await page.evaluate((rules) => {
             const images: string[] = [];
@@ -1344,7 +1439,7 @@ const buildDiagnosticsFixPrompt = (diag: PreflightResult, base?: AssetScanResult
     lines.push('If lucide-react icons are used, ensure they are rendered as elements like <ShoppingCart /> not passed as objects or children.');
     lines.push("Do not import icons from 'react'; import named icons from 'lucide-react' (or equivalent) and reference them directly in JSX.");
     lines.push('If createRoot is used, import it: `import { createRoot } from "react-dom/client"` and use `createRoot(container).render(<App />)`; do not rely on ReactDOM.render.');
-    lines.push('Ensure there is exactly one copy of React at runtime: normalize all imports to `https://esm.sh/react@18?dev` and `https://esm.sh/react-dom@18/client?dev` and avoid mixing CDN specifiers.');
+    lines.push('Ensure there is exactly one copy of React at runtime: normalize all imports to `https://esm.sh/react@18?dev&target=es2018` and `https://esm.sh/react-dom@18/client?dev&target=es2018` and avoid mixing CDN specifiers.');
     lines.push('Also fix any missing exports, invalid hooks usage, or JSX typos shown by the console.');
     if (base) {
         lines.push('\nSTRICT ASSET CONSTRAINTS (mandatory after iteration 0):');
@@ -1444,9 +1539,18 @@ const autoRepairIconImports = async (entryPath: string): Promise<boolean> => {
     };
     await walk(siteDir);
 
-    const allowedReactUpper = new Set(['Fragment', 'StrictMode', 'Suspense', 'Profiler']);
+    const allowedReactUpper = new Set([
+        'Fragment', 'StrictMode', 'Suspense', 'Profiler',
+        'Component', 'PureComponent', 'Children',
+        'createElement', 'cloneElement', 'isValidElement',
+        'createContext', 'forwardRef', 'lazy', 'memo', 'createRef',
+        'startTransition', 'useTransition', 'useDeferredValue',
+        'useId', 'useSyncExternalStore', 'useInsertionEffect',
+    ]);
     const dev = process.env.REACT_DEV === 'true' || process.env.NODE_ENV !== 'production';
-    const lucideImport = dev ? 'https://esm.sh/lucide-react?dev&target=es2018' : 'https://esm.sh/lucide-react?target=es2018';
+    const lucideImport = dev
+        ? 'https://esm.sh/lucide-react@0.555.0?deps=react@18,react-dom@18&dev&target=es2018'
+        : 'https://esm.sh/lucide-react@0.555.0?deps=react@18,react-dom@18&target=es2018';
     let changedAny = false;
 
     for (const f of files) {
@@ -1497,7 +1601,8 @@ const autoRepairIconImports = async (entryPath: string): Promise<boolean> => {
                     const before = m2[0];
                     const currentNames = m2[2].split(',').map(s => s.trim()).filter(Boolean);
                     const merged = Array.from(new Set([...currentNames, ...icons]));
-                    const after = `${m2[1]}import { ${merged.join(', ')} } from ${m2[3]}${m2[4]}${m2[3]};`;
+                    // Always use canonical lucideImport URL
+                    const after = `${m2[1]}import { ${merged.join(', ')} } from '${lucideImport}';`;
                     out = out.replace(before, after);
                 } else {
                     out = `import { ${icons.join(', ')} } from '${lucideImport}';\n` + out;

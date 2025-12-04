@@ -116,6 +116,17 @@ When provided with `section_specs` JSON:
 - Use semantic HTML elements (header, nav, main, section, footer)
 - Keep component files focused and readable
 
+### 8. COMMON PITFALLS (AVOID THESE)
+- DO NOT import icons from 'react-dom' or 'react-dom/client'.
+- DO NOT import icons from 'react'.
+- ALWAYS import icons from 'lucide-react'.
+- Example CORRECT imports:
+  ```javascript
+  import React, { useState } from 'https://esm.sh/react@18?dev';
+  import { createRoot } from 'https://esm.sh/react-dom@18/client?dev';
+  import { ChevronLeft, Menu } from 'https://esm.sh/lucide-react@0.263.1?dev';
+  ```
+
 ## LIBRARIES AVAILABLE
 - React 18 via CDN
 - Tailwind CSS via CDN  
