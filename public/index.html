@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Site Visual & Performance Checker</title>
+  <style>
+    :root {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #0f172a;
+      background: #e8eeff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px 18px 48px;
+      background: radial-gradient(circle at 18% 15%, #dbeafe 0, #eef2ff 40%, #f8fafc 100%);
+      min-height: 100vh;
+    }
+
+    .page {
+      width: min(1080px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(220px, 0.9fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: 34px;
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      margin: 8px 0 0;
+      color: #475569;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .hero-card {
+      background: #fff;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid #d6e3ff;
+      box-shadow: 0 18px 30px rgba(15, 23, 42, 0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .hero-card p {
+      margin: 0;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .hero-card small {
+      color: #475569;
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid #dfe7fb;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .step-card {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .step-heading {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .step-label {
+      background: #e0f2fe;
+      color: #075985;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 12px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+      line-height: 1.4;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .helper-text {
+      color: #475569;
+      margin: 4px 0 0;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #0f172a;
+      font-size: 14px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px 13px;
+      border: 1px solid #cbd5f1;
+      border-radius: 12px;
+      font-size: 15px;
+      background: #f8fafc;
+      color: #0f172a;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 2px solid #bcd5ff;
+      border-color: #93c5fd;
+      background: #fff;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .row.tight {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .mode-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .mode-option {
+      border: 1px solid #d0dbff;
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      cursor: pointer;
+      background: #f8faff;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .mode-option:hover {
+      border-color: #2563eb;
+      box-shadow: 0 10px 18px rgba(37, 99, 235, 0.15);
+    }
+
+    .mode-option input {
+      margin-top: 4px;
+    }
+
+    .mode-option strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .mode-option span {
+      color: #55607a;
+      font-size: 14px;
+    }
+
+    .device-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .pill-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px dashed #cbd5f5;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 600;
+      color: #0f172a;
+      background: #f8faff;
+    }
+
+    .inline-help {
+      color: #5b677d;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    details.advanced {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    details.advanced summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 22px 24px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 13px;
+      color: #344256;
+      margin: 0;
+    }
+
+    details.advanced summary::-webkit-details-marker {
+      display: none;
+    }
+
+    details.advanced[open] summary {
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .advanced-content {
+      padding: 20px 24px 24px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .toggle-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .toggle-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      margin-bottom: 0;
+    }
+
+    .action-card .action-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 26px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 20px 32px rgba(37, 99, 235, 0.25);
+      font-weight: 700;
+      transition: transform 0.1s ease;
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    #status {
+      flex: 1;
+      min-height: 46px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 600;
+      background: #edf2ff;
+      border: 1px solid #dbe4ff;
+      color: #475569;
+    }
+
+    .alert {
+      background: #edf2ff;
+      color: #1d4ed8;
+      border-color: #cdd4ff;
+    }
+
+    .alert.error {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    .alert.success {
+      background: #dcfce7;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 12px;
+      border-radius: 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 10px;
+    }
+
+    .result {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #075985;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .pill.secondary {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .history-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 14px;
+    }
+
+    .history-item {
+      padding: 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      background: #f8fafc;
+      display: grid;
+      gap: 8px;
+    }
+
+    .history-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .muted {
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .statline {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-weight: 700;
+    }
+
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .history-empty {
+      text-align: center;
+      color: #94a3b8;
+      font-weight: 600;
+      padding: 18px 0;
+    }
+
+    [data-crawl-wrapper].disabled {
+      opacity: 0.4;
+    }
+
+    code {
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 960px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="hero">
+      <div>
+        <p class="eyebrow"
+          style="text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; color: #2563eb; margin: 0 0 6px;">
+          Visual & Performance</p>
+        <h1>Friendly site comparison for everyone</h1>
+        <p>Paste a trusted "Base" page and the new "Target" page. We'll run Playwright, capture screenshots, measure
+          load time,
+          and save easy-to-share reports.</p>
+      </div>
+      <div class="hero-card">
+        <p>Artifacts live in <code>/artifacts</code></p>
+        <small>Each run stores PNGs, diffs, and a JSON report.</small>
+      </div>
+    </div>
+
+    <section class="panel step-card">
+      <div class="step-heading">
+        <span class="step-label">Step 1</span>
+        <div>
+          <h2>Tell us what to compare</h2>
+          <p class="helper-text">Base = the site you trust today. Target = the version you're validating.</p>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="baseUrl">Base URL</label>
+          <input id="baseUrl" type="url" placeholder="https://www.example.com" required />
+        </div>
+        <div>
+          <label for="targetUrl">Target URL</label>
+          <input id="targetUrl" type="url" placeholder="https://preview.example.com" required />
+        </div>
+      </div>
+    </section>
+
+    <section class="panel step-card">
+      <div class="step-heading">
+        <span class="step-label">Step 2</span>
+        <div>
+          <h2>Choose how thorough to be</h2>
+          <p class="helper-text">Single page is perfect for quick checks. Site crawl follows internal links
+            automatically.</p>
+        </div>
+      </div>
+      <div class="mode-options">
+        <label class="mode-option">
+          <input type="radio" name="mode" value="single" checked />
+          <div>
+            <strong>Single page</strong>
+            <span>Diffs exactly one URL pair.</span>
+          </div>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="mode" value="batch" />
+          <div>
+            <strong>Site crawl</strong>
+            <span>Starts at the base URL and compares matching paths.</span>
+          </div>
+        </label>
+      </div>
+      <div class="row tight">
+        <div data-crawl-wrapper>
+          <label for="maxPages">Pages to crawl</label>
+          <input id="maxPages" type="number" min="1" value="10" data-crawl-field />
+          <p class="inline-help">Only used for site crawl mode.</p>
+        </div>
+        <div data-crawl-wrapper>
+          <label for="includePatterns">Include paths (comma separated)</label>
+          <input id="includePatterns" type="text" placeholder="/shop/**, /blog/*" data-crawl-field />
+        </div>
+        <div data-crawl-wrapper>
+          <label for="excludePatterns">Skip paths (comma separated)</label>
+          <input id="excludePatterns" type="text" placeholder="/admin/**, *.pdf" data-crawl-field />
+        </div>
+      </div>
+      <div>
+        <label>Devices to capture</label>
+        <div class="device-row">
+          <label class="pill-toggle"><input type="checkbox" id="deviceDesktop" checked /> Desktop (1280×720)</label>
+          <label class="pill-toggle"><input type="checkbox" id="deviceMobile" /> Mobile (375×667)</label>
+        </div>
+      </div>
+      <div class="row tight">
+        <div>
+          <label for="threshold">Visual sensitivity (0 = strict)</label>
+          <input id="threshold" type="number" min="0" max="1" step="0.01" value="0.1" />
+        </div>
+        <div>
+          <label for="waitUntil">Wait until</label>
+          <select id="waitUntil">
+            <option value="networkidle" selected>networkidle (default)</option>
+            <option value="load">load</option>
+            <option value="domcontentloaded">domcontentloaded</option>
+          </select>
+        </div>
+        <div>
+          <label for="postWait">Extra wait after load (ms)</label>
+          <input id="postWait" type="number" min="0" value="2000" />
+        </div>
+      </div>
+    </section>
+
+    <details class="panel advanced">
+      <summary>Show browser controls</summary>
+      <div class="advanced-content">
+        <div class="row tight">
+          <div>
+            <label for="viewport">Viewport (WIDTHxHEIGHT)</label>
+            <input id="viewport" type="text" value="1280x720" />
+          </div>
+          <div>
+            <label for="dpr">Device scale factor</label>
+            <input id="dpr" type="number" min="0.5" step="0.5" value="1" />
+          </div>
+          <div>
+            <label for="timeout">Navigation timeout (ms, 0 = unlimited)</label>
+            <input id="timeout" type="number" min="0" value="1200000" />
+          </div>
+        </div>
+        <div class="toggle-row">
+          <label><input type="checkbox" id="fullPage" checked /> Capture full page</label>
+          <label><input type="checkbox" id="headless" checked /> Run headless (no UI)</label>
+        </div>
+      </div>
+    </details>
+
+    <section class="panel step-card" style="border-color: #a5b4fc; background: #eef2ff;">
+      <div class="step-heading">
+        <span class="step-label" style="background: #c7d2fe; color: #3730a3;">New: AI Generator</span>
+        <div>
+          <h2>Generate Website from URL</h2>
+          <p class="helper-text">AI will clone the base URL into a React app, iterating until pixel-perfect.</p>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="genBaseUrl">Base URL to Clone</label>
+          <input id="genBaseUrl" type="url" placeholder="https://www.example.com" />
+        </div>
+        <div>
+          <label for="genStack">Stack</label>
+          <select id="genStack">
+            <option value="react_tailwind" selected>React + Tailwind</option>
+          </select>
+        </div>
+      </div>
+      <div class="action-row" style="margin-top: 16px;">
+        <button class="btn-primary" id="genBtn" style="background: linear-gradient(135deg, #4f46e5, #4338ca);">Start
+          Generation</button>
+        <div id="genStatus" style="flex: 1; padding: 10px; border-radius: 12px; background: #fff;"></div>
+      </div>
+      <div id="genResult" hidden class="result"></div>
+    </section>
+
+    <section class="panel action-card">
+      <div class="step-heading">
+        <span class="step-label">Step 3</span>
+        <div>
+          <h2>Run the comparison</h2>
+          <p class="helper-text">We will open browsers, take screenshots, compare pixels, and build a shareable report.
+          </p>
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="btn-primary" id="runBtn">Start comparison</button>
+        <div id="status"></div>
+      </div>
+      <p class="inline-help">Runs may take a minute depending on site speed. Keep this tab open until it finishes.</p>
+      <div id="resultCard" hidden class="result"></div>
+      <pre id="output" hidden></pre>
+    </section>
+
+    <section class="panel history-card">
+      <div class="step-heading" style="align-items: flex-start;">
+        <span class="step-label">History</span>
+        <div>
+          <h2>Recent runs</h2>
+          <p class="helper-text">Every entry links directly to the JSON-backed viewer and underlying artifacts.</p>
+        </div>
+      </div>
+      <div id="history"></div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // --- Supabase Config ---
+    let supabase;
+
+    const initSupabase = async () => {
+      try {
+        const res = await fetch('/config');
+        if (res.ok) {
+          const { supabaseUrl, supabaseAnonKey, supabaseKey } = await res.json();
+          const clientKey = supabaseAnonKey || supabaseKey;
+          if (supabaseUrl && clientKey) {
+            supabase = window.supabase.createClient(supabaseUrl, clientKey);
+            loadHistory(); // Load history immediately
+          }
+        }
+      } catch (e) {
+        console.error('Failed to init supabase', e);
+      }
+    };
+
+    const el = (id) => document.getElementById(id);
+    const runBtn = el('runBtn');
+    const statusBox = el('status');
+    const output = el('output');
+    const resultCard = el('resultCard');
+    const historyEl = el('history');
+
+    // Generator UI
+    const genBtn = el('genBtn');
+    const genStatus = el('genStatus');
+    const genResult = el('genResult');
+    const genBaseUrl = el('genBaseUrl');
+
+    genBtn.addEventListener('click', async () => {
+      const baseUrl = genBaseUrl.value;
+      if (!baseUrl) return alert('Please enter a Base URL');
+
+      genBtn.disabled = true;
+      genStatus.textContent = 'Starting generation... this may take a few minutes.';
+      genResult.hidden = true;
+
+      try {
+        const res = await fetch('/pixelgen/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            baseUrl,
+            stack: 'react_tailwind',
+            devices: ['desktop', 'mobile'],
+            maxIterations: 5
+          })
+        });
+
+        if (!res.ok) throw new Error(res.statusText);
+        const data = await res.json();
+
+        genStatus.textContent = `Done! Reason: ${data.stopReason}`;
+        genResult.innerHTML = `
+            <div><strong>Final URL:</strong> <a href="${data.finalLocalUrl}" target="_blank">${data.finalLocalUrl}</a></div>
+            <div><strong>Artifacts:</strong> <a href="${data.artifactsUrl}" target="_blank">View Folder</a></div>
+            <details>
+                <summary>Iterations (${data.iterations.length})</summary>
+                <pre>${JSON.stringify(data.iterations, null, 2)}</pre>
+            </details>
+        `;
+        genResult.hidden = false;
+      } catch (e) {
+        genStatus.textContent = 'Error: ' + e.message;
+      } finally {
+        genBtn.disabled = false;
+      }
+    });
+
+
+    const modeInputs = Array.from(document.querySelectorAll('input[name="mode"]'));
+    const crawlFields = Array.from(document.querySelectorAll('[data-crawl-field]'));
+    const crawlWrappers = Array.from(document.querySelectorAll('[data-crawl-wrapper]'));
+
+    const getSelectedMode = () => modeInputs.find((input) => input.checked)?.value || 'single';
+
+    const syncCrawlFields = () => {
+      const crawlSelected = getSelectedMode() === 'batch';
+      crawlFields.forEach((field) => {
+        if ('disabled' in field) {
+          field.disabled = !crawlSelected;
+        }
+      });
+      crawlWrappers.forEach((wrapper) => {
+        wrapper.classList.toggle('disabled', !crawlSelected);
+      });
+    };
+
+    modeInputs.forEach((input) => input.addEventListener('change', syncCrawlFields));
+    syncCrawlFields();
+
+    const toLinkPath = (value) => {
+      if (!value) return '';
+      if (/^[a-zA-Z][a-zA-Z0-9+-.]*:/.test(value) || value.startsWith('//')) {
+        return value;
+      }
+      return value.startsWith('/') ? value : `/${value}`;
+    };
+
+    const buildReportLink = (jsonUrl, fallbackUrl) => {
+      if (jsonUrl) {
+        const viewerUrl = new URL('/report-viewer.html', window.location.origin);
+        viewerUrl.searchParams.set('json', jsonUrl);
+        return viewerUrl.toString();
+      }
+      return fallbackUrl ? toLinkPath(fallbackUrl) : '';
+    };
+
+    const parseViewport = (value) => {
+      const m = value.match(/^(\d+)x(\d+)$/i);
+      if (!m) return null;
+      return { width: Number(m[1]), height: Number(m[2]) };
+    };
+
+    const setStatus = (msg, kind = 'info') => {
+      statusBox.innerHTML = '';
+      statusBox.className = 'alert ' + (kind === 'error' ? 'error' : kind === 'success' ? 'success' : '');
+      statusBox.textContent = msg;
+    };
+
+    const clearStatus = () => {
+      statusBox.innerHTML = '';
+      statusBox.className = '';
+    };
+
+    const getAuthHeaders = () => {
+      return { 'Content-Type': 'application/json' };
+    };
+
+    const renderResult = (data) => {
+      if (!data) {
+        resultCard.hidden = true;
+        return;
+      }
+
+      const results = Array.isArray(data) ? data : (data.results || [data]);
+
+      resultCard.innerHTML = '';
+
+      results.forEach(result => {
+        const isBatch = !!result.batchId;
+        const similarity = isBatch ? (result.summary.averageSimilarity * 100).toFixed(2) : (result.diff.similarity * 100).toFixed(2);
+        const baseLoad = isBatch ? result.summary.averageBaseLoadMs : result.base.timing.loadTimeMs;
+        const targetLoad = isBatch ? result.summary.averageTargetLoadMs : result.target.timing.loadTimeMs;
+        const artifacts = result.outputDir?.replace(/^.*?(\/artifacts)/, '$1');
+        const artifactsLink = result.artifactsUrl || toLinkPath(artifacts);
+        const fallbackReport = result.reportUrl || (artifacts ? `${artifacts}/${isBatch ? 'batch-report.html' : 'report.html'}` : '');
+        const reportPath = buildReportLink(result.reportJsonUrl, fallbackReport);
+        const deviceLabel = result.device ? result.device.toUpperCase() : 'DESKTOP';
+
+        const card = document.createElement('div');
+        card.style.marginBottom = '24px';
+        card.style.borderBottom = '1px solid #e2e8f0';
+        card.style.paddingBottom = '24px';
+
+        card.innerHTML = `
+          <div class="inline" style="gap: 10px; align-items: center; flex-wrap: wrap;">
+            <span class="pill">${isBatch ? 'Batch run' : 'Single run'}</span>
+            <span class="pill" style="background: #f1f5f9; color: #475569;">${deviceLabel}</span>
+            <span class="muted">${result.batchId || result.runId}</span>
+          </div>
+          <div class="grid-stats">
+            <div>
+              <div class="muted">Base</div>
+              <div><strong>${result.baseRoot || result.base.url}</strong></div>
+            </div>
+            <div>
+              <div class="muted">Target</div>
+              <div><strong>${result.targetRoot || result.target.url}</strong></div>
+            </div>
+            <div>
+              <div class="muted">Similarity</div>
+              <div class="statline" style="gap:6px;">${similarity}%</div>
+            </div>
+            <div>
+              <div class="muted">Load time</div>
+              <div class="statline" style="gap:6px;">base ${baseLoad?.toFixed(0) || '-'}ms · target ${targetLoad?.toFixed(0) || '-'}ms</div>
+            </div>
+          </div>
+          <div class="inline" style="gap: 8px; margin-top: 6px; flex-wrap: wrap;">
+            ${reportPath ? `<a class="pill" style="background:#2563eb;color:#fff;" href="${reportPath}" target="_blank">View report</a>` : ''}
+            ${artifactsLink ? `<a class="pill secondary" href="${toLinkPath(artifactsLink)}" target="_blank">Artifacts</a>` : ''}
+          </div>
+        `;
+        resultCard.appendChild(card);
+      });
+
+      resultCard.hidden = false;
+    };
+
+    const renderHistory = (items) => {
+      historyEl.innerHTML = '';
+      if (!items || !items.length) {
+        historyEl.innerHTML = '<div class="history-empty">No runs yet. Your next comparison will appear here.</div>';
+        return;
+      }
+      const ul = document.createElement('ul');
+      ul.className = 'history-list';
+      items.forEach((item) => {
+        const li = document.createElement('li');
+        li.className = 'history-item';
+        const artifacts = item.webPath || item.outputDir?.replace(/^.*?(\/artifacts)/, '$1');
+        const artifactsLink = item.artifactsUrl || toLinkPath(artifacts);
+        const fallbackReport = item.reportUrl || (artifacts ? `${artifacts}/${item.type === 'batch' ? 'batch-report.html' : 'report.html'}` : '');
+        const reportLink = buildReportLink(item.reportJsonUrl, fallbackReport);
+        const runTime = item.generatedAt
+          ? new Date(item.generatedAt).toLocaleString()
+          : item.timestamp
+            ? new Date(item.timestamp).toLocaleString()
+            : '';
+        const deviceLabel = item.device ? item.device.toUpperCase() : 'DESKTOP';
+        const similarity = item.summary?.similarity !== undefined ? (item.summary.similarity * 100).toFixed(1) : 'NaN';
+        const baseLoad = item.summary?.baseLoadMs?.toFixed(0) || item.baseLoadMs?.toFixed(0) || '-';
+        const targetLoad = item.summary?.targetLoadMs?.toFixed(0) || item.targetLoadMs?.toFixed(0) || '-';
+
+        li.innerHTML = `
+          <div class="history-row">
+            <div class="inline" style="gap: 8px;">
+              <span class="pill">${item.type === 'batch' ? 'Batch run' : 'Single run'}</span>
+              <span class="pill" style="background: #f1f5f9; color: #475569;">${deviceLabel}</span>
+            </div>
+            <span class="muted">${runTime}</span>
+          </div>
+          <div class="grid-stats" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+            <div>
+              <div class="muted">Base</div>
+              <div><strong>${item.baseUrl}</strong></div>
+            </div>
+            <div>
+              <div class="muted">Target</div>
+              <div><strong>${item.targetUrl}</strong></div>
+            </div>
+            <div>
+              <div class="muted">Similarity</div>
+              <div class="statline" style="gap:6px;">${similarity}%</div>
+            </div>
+            <div>
+              <div class="muted">Load time</div>
+              <div class="statline" style="gap:6px;">base ${baseLoad}ms · target ${targetLoad}ms</div>
+            </div>
+          </div>
+          <div class="inline" style="gap: 8px; flex-wrap: wrap;">
+            ${reportLink ? `<a class="pill" style="background:#2563eb;color:#fff;" href="${reportLink}" target="_blank">View report</a>` : ''}
+            ${artifactsLink ? `<a class="pill secondary" href="${toLinkPath(artifactsLink)}" target="_blank">Artifacts</a>` : ''}
+          </div>
+        `;
+        ul.appendChild(li);
+      });
+      historyEl.appendChild(ul);
+    };
+
+    const loadHistory = async () => {
+      try {
+        const res = await fetch('/history', { headers: getAuthHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        renderHistory(data.items || []);
+      } catch (err) {
+        console.error('history load failed', err);
+      }
+    };
+
+    runBtn.addEventListener('click', async () => {
+      clearStatus();
+      output.hidden = true;
+      resultCard.hidden = true;
+      const baseUrl = el('baseUrl').value.trim();
+      const targetUrl = el('targetUrl').value.trim();
+      if (!baseUrl || !targetUrl) {
+        setStatus('Base and Target URLs are required', 'error');
+        return;
+      }
+
+      const viewport = parseViewport(el('viewport').value.trim());
+      if (!viewport) {
+        setStatus('Viewport must be in WIDTHxHEIGHT format', 'error');
+        return;
+      }
+
+      const payload = {
+        baseUrl,
+        targetUrl,
+        options: {
+          threshold: Number(el('threshold').value),
+          viewport: {
+            width: viewport.width,
+            height: viewport.height,
+            deviceScaleFactor: Number(el('dpr').value),
+          },
+          waitUntil: el('waitUntil').value,
+          navigationTimeoutMs: Number(el('timeout').value),
+          postLoadWaitMs: Number(el('postWait').value),
+          fullPage: el('fullPage').checked,
+          headless: el('headless').checked,
+          devices: [
+            el('deviceDesktop').checked ? 'desktop' : null,
+            el('deviceMobile').checked ? 'mobile' : null,
+          ].filter(Boolean),
+        },
+      };
+
+      const isCrawl = getSelectedMode() === 'batch';
+      if (isCrawl) {
+        payload.maxPages = Number(el('maxPages').value) || 10;
+        const inc = el('includePatterns').value.trim();
+        const exc = el('excludePatterns').value.trim();
+        if (inc) payload.includePatterns = inc.split(',').map(s => s.trim()).filter(Boolean);
+        if (exc) payload.excludePatterns = exc.split(',').map(s => s.trim()).filter(Boolean);
+      }
+
+      runBtn.disabled = true;
+      setStatus('Running...', 'info');
+      try {
+        const res = await fetch(isCrawl ? '/compare/batch' : '/compare', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : 'Request failed');
+
+        output.hidden = false;
+        output.textContent = JSON.stringify(data.result, null, 2);
+        const artifacts = data.result?.artifactsUrl || data.result?.outputDir?.replace(/^.*?(\/artifacts)/, '$1');
+        const link = artifacts ? `Artifacts: ${artifacts.startsWith('http') ? artifacts : location.origin + toLinkPath(artifacts)}` : '';
+        setStatus(link || 'Completed', 'success');
+        renderResult(data.results || data.result);
+        loadHistory();
+      } catch (err) {
+        output.hidden = false;
+        output.textContent = err.message || String(err);
+        setStatus(err.message || 'Error', 'error');
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+
+    initSupabase();
+    loadHistory();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,32 @@
+{
+  "jobId": "run-2025-12-03T06-14-07-125Z",
+  "artifactsUrl": "https://fatjgrpbswalyrewntnn.supabase.co/storage/v1/object/public/artifacts/pixelgen/run-2025-12-03T06-14-07-125Z",
+  "iterations": [
+    {
+      "i": 0,
+      "similarities": {
+        "desktop": 0.6018411856395817,
+        "mobile": 0.4396235883284787
+      },
+      "localUrl": "http://localhost:3000/artifacts/pixelgen/run-2025-12-03T06-14-07-125Z/iteration-00/site/index.html"
+    },
+    {
+      "i": 1,
+      "similarities": {
+        "desktop": 0.5315411303298472,
+        "mobile": 0.43811589759313196
+      },
+      "localUrl": "http://localhost:3000/artifacts/pixelgen/run-2025-12-03T06-14-07-125Z/iteration-01/site/index.html"
+    },
+    {
+      "i": 2,
+      "similarities": {
+        "desktop": 0.6422254308949669,
+        "mobile": 0.4124864837242578
+      },
+      "localUrl": "http://localhost:3000/artifacts/pixelgen/run-2025-12-03T06-14-07-125Z/iteration-02/site/index.html"
+    }
+  ],
+  "finalLocalUrl": "http://localhost:3000/artifacts/pixelgen/run-2025-12-03T06-14-07-125Z/iteration-02/site/index.html",
+  "stopReason": "Convergence stalled"
+}

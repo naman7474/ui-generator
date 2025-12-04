@@ -1,0 +1,49 @@
+body {
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: normal;
+  color: rgb(45, 55, 72);
+  background-color: rgb(255, 255, 255);
+}
+
+p {
+  font-family: "DIN Neuzeit Grotesk", sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 19.25px;
+  letter-spacing: 1.98px;
+  color: rgb(255, 255, 255);
+  background-color: rgba(0, 0, 0, 0);
+}
+
+h2 {
+  font-family: "DIN Neuzeit Grotesk", sans-serif;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 38.4px;
+  letter-spacing: 5.76px;
+  color: rgb(48, 48, 48);
+  background-color: rgba(0, 0, 0, 0);
+}
+
+h3 {
+  font-family: "DIN Neuzeit Grotesk", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 14.4px;
+  letter-spacing: 2.16px;
+  color: rgb(48, 48, 48);
+  background-color: rgba(0, 0, 0, 0);
+}
+
+h4 {
+  font-family: Inter, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 14.4px;
+  letter-spacing: normal;
+  color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0);
+}

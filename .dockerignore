@@ -1,0 +1,7 @@
+node_modules
+npm-debug.log
+artifact*
+dist
+.DS_Store
+prd.md
+artifacts

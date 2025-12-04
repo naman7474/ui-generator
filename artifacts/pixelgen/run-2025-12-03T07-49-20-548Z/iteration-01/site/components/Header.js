@@ -1,0 +1,8 @@
+import React from "https://esm.sh/react@18?dev";
+import { ShoppingCart, User, Search } from "https://esm.sh/lucide-react?dev";
+function Header() {
+  return /* @__PURE__ */ React.createElement("header", { className: "sticky top-0 z-50 bg-white shadow-sm" }, /* @__PURE__ */ React.createElement("div", { className: "bg-black text-white text-[11px] text-center py-2 tracking-[1px] uppercase font-medium" }, "Free Shipping Over \u20B9599"), /* @__PURE__ */ React.createElement("div", { className: "max-w-[1280px] mx-auto px-5 py-4 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex-1" }, /* @__PURE__ */ React.createElement("h1", { className: "text-3xl font-bold text-brand-orange tracking-tighter", style: { fontFamily: "cursive" } }, "KILRR")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-6" }, /* @__PURE__ */ React.createElement("button", { className: "hover:text-brand-orange transition-colors" }, /* @__PURE__ */ React.createElement(Search, { size: 24, strokeWidth: 1.5 })), /* @__PURE__ */ React.createElement("button", { className: "hover:text-brand-orange transition-colors" }, /* @__PURE__ */ React.createElement(User, { size: 24, strokeWidth: 1.5 })), /* @__PURE__ */ React.createElement("button", { className: "hover:text-brand-orange transition-colors relative" }, /* @__PURE__ */ React.createElement(ShoppingCart, { size: 24, strokeWidth: 1.5 }), /* @__PURE__ */ React.createElement("span", { className: "absolute -top-1 -right-1 bg-brand-orange text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full" }, "0")))));
+}
+export {
+  Header as default
+};

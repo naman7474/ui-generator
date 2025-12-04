@@ -1,0 +1,48 @@
+{
+  "name": "checker",
+  "version": "1.0.0",
+  "description": "Visual and performance comparison checker for two URLs (screenshots, pixel diff, load timing).",
+  "main": "dist/server.js",
+  "type": "commonjs",
+  "bin": {
+    "checker": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts",
+    "cli": "node dist/cli.js"
+  },
+  "keywords": [
+    "visual regression",
+    "performance",
+    "playwright",
+    "pixelmatch"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.674.0",
+    "@aws-sdk/s3-request-presigner": "^3.674.0",
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.84.0",
+    "@types/minimatch": "^5.1.2",
+    "commander": "^14.0.2",
+    "dotenv": "^17.2.3",
+    "esbuild": "^0.27.0",
+    "express": "^5.1.0",
+    "minimatch": "^10.1.1",
+    "pixelmatch": "^7.1.0",
+    "playwright": "^1.56.1",
+    "pngjs": "^7.0.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/commander": "^2.12.0",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.1",
+    "@types/pngjs": "^6.0.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

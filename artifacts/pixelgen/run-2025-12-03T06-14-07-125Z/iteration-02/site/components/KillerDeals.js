@@ -1,0 +1,21 @@
+import React from "https://esm.sh/react@18?dev";
+function KillerDeals() {
+  return /* @__PURE__ */ React.createElement("section", { className: "py-12 bg-white md:hidden" }, /* @__PURE__ */ React.createElement("div", { className: "text-center mb-8 relative" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-center items-center gap-4 mb-2" }, /* @__PURE__ */ React.createElement("span", { className: "bg-brand-orange text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider transform -skew-x-12" }, "Express Delivery"), /* @__PURE__ */ React.createElement("span", { className: "bg-brand-orange text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider transform -skew-x-12" }, "Best Prices")), /* @__PURE__ */ React.createElement("h2", { className: "text-3xl font-serif font-black uppercase tracking-tight text-gray-900" }, "Get Killer Deals")), /* @__PURE__ */ React.createElement("div", { className: "max-w-6xl mx-auto px-4 grid grid-cols-1 gap-6" }, /* @__PURE__ */ React.createElement("div", { className: "relative h-64 rounded-lg overflow-hidden group cursor-pointer" }, /* @__PURE__ */ React.createElement(
+    "img",
+    {
+      src: "https://images.unsplash.com/photo-1601050690597-df0568f70950?q=80&w=1000&auto=format&fit=crop",
+      alt: "Tikka Masalas",
+      className: "absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+    }
+  ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-black/50 flex flex-col justify-end p-6" }, /* @__PURE__ */ React.createElement("h3", { className: "text-white text-2xl font-black uppercase mb-1" }, "Tikka Masalas"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-white/70 line-through text-sm" }, "\u20B9700"), /* @__PURE__ */ React.createElement("span", { className: "text-white text-xl font-bold" }, "\u20B9629"), /* @__PURE__ */ React.createElement("span", { className: "text-green-400 text-xs font-bold" }, "(10.1% OFF)")), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "bg-white/20 backdrop-blur text-white text-xs px-2 py-1 rounded" }, "Pack of 10"), /* @__PURE__ */ React.createElement("span", { className: "bg-black/40 backdrop-blur text-white text-xs px-2 py-1 rounded" }, "Pack of 15")), /* @__PURE__ */ React.createElement("button", { className: "mt-4 bg-brand-orange text-white w-full py-2 font-bold uppercase tracking-wider rounded hover:bg-orange-800 transition-colors" }, "+ Add"))), /* @__PURE__ */ React.createElement("div", { className: "relative h-64 rounded-lg overflow-hidden group cursor-pointer" }, /* @__PURE__ */ React.createElement(
+    "img",
+    {
+      src: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?q=80&w=1000&auto=format&fit=crop",
+      alt: "Gravy Masalas",
+      className: "absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+    }
+  ), /* @__PURE__ */ React.createElement("div", { className: "absolute inset-0 bg-black/50 flex flex-col justify-end p-6" }, /* @__PURE__ */ React.createElement("h3", { className: "text-white text-2xl font-black uppercase mb-1" }, "Gravy Masalas"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 mb-3" }, /* @__PURE__ */ React.createElement("span", { className: "text-white/70 line-through text-sm" }, "\u20B9640"), /* @__PURE__ */ React.createElement("span", { className: "text-white text-xl font-bold" }, "\u20B9585"), /* @__PURE__ */ React.createElement("span", { className: "text-green-400 text-xs font-bold" }, "(8.6% OFF)")), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "bg-white/20 backdrop-blur text-white text-xs px-2 py-1 rounded" }, "Pack of 4")), /* @__PURE__ */ React.createElement("button", { className: "mt-4 bg-brand-orange text-white w-full py-2 font-bold uppercase tracking-wider rounded hover:bg-orange-800 transition-colors" }, "+ Add")))));
+}
+export {
+  KillerDeals as default
+};

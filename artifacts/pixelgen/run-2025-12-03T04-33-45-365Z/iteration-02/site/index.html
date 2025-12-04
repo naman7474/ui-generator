@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KILRR - Killer Taste Zero Fuss</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=Permanent+Marker&display=swap" rel="stylesheet">
+    <style>
+      html, body, #root {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Montserrat', sans-serif;
+        overflow-x: hidden;
+      }
+      .font-brush {
+        font-family: 'Permanent Marker', cursive;
+      }
+      .marquee-container {
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      .marquee-content {
+        display: inline-block;
+        animation: marquee 20s linear infinite;
+      }
+      @keyframes marquee {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Montserrat', 'sans-serif'],
+              brush: ['"Permanent Marker"', 'cursive'],
+            },
+            colors: {
+              brand: {
+                orange: '#D35400',
+                dark: '#1A1A1A',
+                light: '#F9F9F9',
+                beige: '#F5F1EA'
+              }
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body class="bg-white text-brand-dark">
+    <div id="root"></div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

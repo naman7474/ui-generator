@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Report Viewer</title>
+  <style>
+    :root {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #0f172a;
+      background: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px 18px 48px;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 0;
+      color: #475569;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #075985;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+      margin-bottom: 14px;
+    }
+
+    .muted {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+      align-items: start;
+    }
+
+    figure {
+      margin: 0;
+    }
+
+    figure img {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #0f172a;
+    }
+
+    .stat {
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .label {
+      font-weight: 700;
+      color: #334155;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .chips {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .loader,
+    .error {
+      text-align: center;
+      padding: 40px 0;
+      color: #475569;
+    }
+
+    .error {
+      color: #b91c1c;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page" id="app">
+    <div class="loader">Loading report…</div>
+  </div>
+  <script>
+    (() => {
+      const app = document.getElementById('app');
+      const params = new URLSearchParams(window.location.search);
+      const jsonParam = params.get('json');
+
+      if (!jsonParam) {
+        app.innerHTML = '<div class="error">Missing ?json parameter</div>';
+        return;
+      }
+
+      const formatPercent = (value) => typeof value === 'number' && Number.isFinite(value)
+        ? `${(value * 100).toFixed(2)}%`
+        : '–';
+      const formatNumber = (value) => typeof value === 'number' && Number.isFinite(value)
+        ? value.toLocaleString()
+        : '–';
+      const formatMs = (value) => typeof value === 'number' && Number.isFinite(value)
+        ? `${value.toFixed(0)} ms`
+        : '–';
+
+      const absoluteJsonUrl = new URL(jsonParam, window.location.href);
+      const rawJsonUrl = absoluteJsonUrl.toString();
+      const assetBase = `${absoluteJsonUrl.origin}${absoluteJsonUrl.pathname.replace(/[^/]+$/, '')}`;
+
+      const cleanDirName = (value) => {
+        if (!value) return '';
+        const normalized = String(value).replace(/\\/g, '/');
+        const parts = normalized.split('/').filter(Boolean);
+        return parts.pop() || '';
+      };
+
+      const buildAssetBase = (subDir) => {
+        if (!subDir) return assetBase;
+        const safe = subDir
+          .replace(/\\/g, '/')
+          .split('/')
+          .filter(Boolean)
+          .map((segment) => encodeURIComponent(segment))
+          .join('/');
+        return `${assetBase}${safe ? `${safe}/` : ''}`;
+      };
+
+      const resolveAsset = (filename, subDir) => {
+        if (!filename) return '';
+        const base = buildAssetBase(subDir);
+        try {
+          return new URL(filename, base).toString();
+        } catch (e) {
+          return `${base}${filename}`;
+        }
+      };
+
+      const markdownToHtml = (markdown) => {
+        if (!markdown) return '';
+        const lines = markdown.replace(/\r/g, '').split('\n');
+        let html = '';
+        let inUl = false;
+        let inOl = false;
+        let inCode = false;
+
+        const closeLists = () => {
+          if (inUl) {
+            html += '</ul>';
+            inUl = false;
+          }
+          if (inOl) {
+            html += '</ol>';
+            inOl = false;
+          }
+        };
+
+        const escapeHtml = (str) => str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+
+        const formatInline = (str) => escapeHtml(str)
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/__(.+?)__/g, '<strong>$1</strong>')
+          .replace(/\*(.+?)\*/g, '<em>$1</em>')
+          .replace(/_(.+?)_/g, '<em>$1</em>')
+          .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+
+          if (trimmed.startsWith('```')) {
+            if (inCode) {
+              html += '</code></pre>';
+              inCode = false;
+            } else {
+              closeLists();
+              inCode = true;
+              html += '<pre><code>';
+            }
+            continue;
+          }
+
+          if (inCode) {
+            html += `${escapeHtml(line)}\n`;
+            continue;
+          }
+
+          if (trimmed.length === 0) {
+            closeLists();
+            continue;
+          }
+
+          const ulMatch = line.match(/^\s*[-*]\s+(.*)$/);
+          if (ulMatch) {
+            if (!inUl) {
+              closeLists();
+              inUl = true;
+              html += '<ul>';
+            }
+            html += `<li>${formatInline(ulMatch[1])}</li>`;
+            continue;
+          }
+
+          const olMatch = line.match(/^\s*\d+\.\s+(.*)$/);
+          if (olMatch) {
+            if (!inOl) {
+              closeLists();
+              inOl = true;
+              html += '<ol>';
+            }
+            html += `<li>${formatInline(olMatch[1])}</li>`;
+            continue;
+          }
+
+          closeLists();
+
+          const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+          if (headingMatch) {
+            const level = headingMatch[1].length;
+            html += `<h${level}>${formatInline(headingMatch[2])}</h${level}>`;
+            continue;
+          }
+
+          html += `<p>${formatInline(trimmed)}</p>`;
+        }
+
+        closeLists();
+        if (inCode) html += '</code></pre>';
+        return html;
+      };
+
+      const renderStyleDifferences = (differences) => {
+        if (!differences || differences.length === 0) return '';
+
+        const sections = {};
+        differences.forEach((diff) => {
+          const sectionKey = diff.sectionTarget || diff.section || 'Global';
+          if (!sections[sectionKey]) sections[sectionKey] = [];
+          sections[sectionKey].push(diff);
+        });
+
+        const renderSectionRows = (sectionName, entries) => {
+          const groupedByCategory = {};
+          entries.forEach((entry) => {
+            const cat = entry.category || 'Misc';
+            if (!groupedByCategory[cat]) groupedByCategory[cat] = [];
+            groupedByCategory[cat].push(entry);
+          });
+
+          const sectionTitle = sectionName === 'Global' ? 'Global / Shared Styles' : sectionName;
+
+          return `
+            <tr style="background: #dbeafe;">
+              <td colspan="5" style="padding: 10px 16px; font-weight: 700; color: #1d4ed8;">Section: ${sectionTitle}</td>
+            </tr>
+            ${Object.keys(groupedByCategory).sort().map(cat => `
+              <tr style="background: #f1f5f9;">
+                <td colspan="5" style="padding: 8px 16px; font-weight: 700; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">${cat}</td>
+              </tr>
+              ${groupedByCategory[cat].map(d => {
+                const sectionLines = [];
+                if (d.sectionPathTarget) {
+                  sectionLines.push(`<div style=\"font-size: 11px; color: #0f172a; margin-bottom: 2px; font-weight: 600;\">Target: ${d.sectionPathTarget}</div>`);
+                } else if (d.sectionPath) {
+                  sectionLines.push(`<div style=\"font-size: 11px; color: #64748b; margin-bottom: 4px;\">${d.sectionPath}</div>`);
+                }
+                if (d.sectionPathBase && d.sectionPathBase !== d.sectionPathTarget) {
+                  sectionLines.push(`<div style=\"font-size: 11px; color: #94a3b8; margin-bottom: 4px;\">Base: ${d.sectionPathBase}</div>`);
+                }
+
+                return `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 10px 16px;">
+                    ${sectionLines.join('')}
+                    ${d.text ? `<div style="font-weight: 600; color: #0f172a; margin-bottom: 2px;">${d.text}</div>` : ''}
+                    <code style="font-size: 11px; color: #475569; background: #e2e8f0; padding: 2px 5px; border-radius: 4px; word-break: break-all;">${d.tagName} ${d.selector}</code>
+                  </td>
+                  <td style="padding: 10px 16px; color: #334155; font-weight: 500;">${d.property}</td>
+                  <td style="padding: 10px 16px; color: #64748b; text-decoration: line-through;">${d.baseValue}</td>
+                  <td style="padding: 10px 16px; color: #0f172a; font-weight: 600;">${d.targetValue}</td>
+                  <td style="padding: 10px 16px;">
+                    <span style="font-size: 12px; font-weight: 600; color: ${d.diff && d.diff.startsWith('+') ? '#dc2626' : (d.diff === 'changed' ? '#d97706' : '#166534')}; background: ${d.diff && d.diff.startsWith('+') ? '#fef2f2' : (d.diff === 'changed' ? '#fffbeb' : '#f0fdf4')}; padding: 2px 8px; border-radius: 99px; white-space: nowrap;">${d.diff}</span>
+                  </td>
+                </tr>
+                `;
+              }).join('')}
+            `).join('')}
+          `;
+        };
+
+        return `
+          <div class="card" style="margin-top: 14px; padding: 0; overflow: hidden;">
+            <div class="label" style="padding: 16px 16px 12px; border-bottom: 1px solid #e2e8f0;">Actionable Insights</div>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                <thead>
+                  <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                    <th style="padding: 10px 16px; font-weight: 600; color: #64748b;">Element</th>
+                    <th style="padding: 10px 16px; font-weight: 600; color: #64748b;">Property</th>
+                    <th style="padding: 10px 16px; font-weight: 600; color: #64748b;">Base</th>
+                    <th style="padding: 10px 16px; font-weight: 600; color: #64748b;">Target</th>
+                    <th style="padding: 10px 16px; font-weight: 600; color: #64748b;">Diff</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${Object.keys(sections).sort().map(section => renderSectionRows(section, sections[section])).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      };
+
+      const renderFixPrompt = (prompt) => {
+        if (!prompt) return '';
+        return `
+          <div class="card" style="margin-top: 14px;">
+            <div class="label" style="margin-bottom: 8px;">AI Fix Prompt</div>
+            <div style="background: #fff; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; line-height: 1.6;">
+              ${markdownToHtml(prompt)}
+            </div>
+          </div>
+        `;
+      };
+
+      const renderPageCard = ({ title, subtitle, baseImg, targetImg, diffImg, styleDiff }) => `
+        <div class="card">
+          <div class="label">${title}</div>
+          ${subtitle ? `<div class="muted" style="margin: 4px 0 8px;">${subtitle}</div>` : ''}
+          <div class="row">
+            <figure>
+              <div class="label">Base</div>
+              <img src="${baseImg}" alt="Base screenshot for ${title}" />
+            </figure>
+            <figure>
+              <div class="label">Target</div>
+              <img src="${targetImg}" alt="Target screenshot for ${title}" />
+            </figure>
+            <figure>
+              <div class="label">Diff</div>
+              <img src="${diffImg}" alt="Diff heatmap for ${title}" />
+            </figure>
+          </div>
+          ${styleDiff ? renderStyleDifferences(styleDiff) : ''}
+        </div>
+      `;
+
+      const renderSingle = (payload) => {
+        const createdAt = payload.timestamps?.generatedAt
+          ? new Date(payload.timestamps.generatedAt).toLocaleString()
+          : '';
+        const baseImg = resolveAsset(payload.base?.screenshot);
+        const targetImg = resolveAsset(payload.target?.screenshot);
+        const diffImg = resolveAsset(payload.diff?.diffImage);
+
+        const pageCard = renderPageCard({
+          title: payload.target?.url || payload.base?.url || 'Page',
+          subtitle: `Similarity ${formatPercent(payload.diff?.similarity)} · Base ${formatMs(payload.base?.timing?.loadTimeMs)} / Target ${formatMs(payload.target?.timing?.loadTimeMs)}`,
+          baseImg,
+          targetImg,
+          diffImg,
+          styleDiff: payload.styleDiff?.differences,
+        });
+
+        return `
+          <div class="hero">
+            <div>
+              <div class="pill">Run ${payload.runId || ''}</div>
+              <h1>Visual comparison report</h1>
+              <p>${createdAt ? `Generated ${createdAt}` : ''}</p>
+            </div>
+            <a class="btn-primary" href="${rawJsonUrl}" target="_blank" rel="noreferrer">View raw JSON</a>
+          </div>
+
+          <div class="grid">
+            <div class="card">
+              <div class="label">Visual similarity</div>
+              <div class="stat">${formatPercent(payload.diff?.similarity)}</div>
+              <div class="muted">${formatNumber(payload.diff?.diffPixels)} pixels differed of ${formatNumber(payload.diff?.totalPixels)}</div>
+            </div>
+            <div class="card">
+              <div class="label">Load time (ms)</div>
+              <div class="chips">
+                <span class="pill" style="background:#dcfce7;color:#166534;">Base ${formatMs(payload.base?.timing?.loadTimeMs)}</span>
+                <span class="pill" style="background:#fee2e2;color:#9f1239;">Target ${formatMs(payload.target?.timing?.loadTimeMs)}</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="label">Scope</div>
+              <div class="muted"><strong>Base:</strong> <a href="${payload.base?.url || '#'}" target="_blank" rel="noreferrer">${payload.base?.url || '–'}</a></div>
+              <div class="muted"><strong>Target:</strong> <a href="${payload.target?.url || '#'}" target="_blank" rel="noreferrer">${payload.target?.url || '–'}</a></div>
+            </div>
+          </div>
+
+          <div style="margin-top: 12px; display: grid; gap: 12px;">
+            ${pageCard}
+          </div>
+          ${renderFixPrompt(payload.fixPrompt)}
+        `;
+      };
+
+      const renderBatch = (payload) => {
+        const summary = payload.summary || {};
+        const paths = Array.isArray(payload.paths) ? payload.paths : [];
+        const pages = Array.isArray(payload.pages) ? payload.pages : [];
+
+        const cards = pages.map((page, idx) => {
+          const pageLabel = paths[idx] || page.base?.url || page.runId || `Page ${idx + 1}`;
+          const dirName = page.runId || cleanDirName(page.outputDir) || '';
+          const baseImg = resolveAsset(page.base?.screenshot, dirName);
+          const targetImg = resolveAsset(page.target?.screenshot, dirName);
+          const diffImg = resolveAsset(page.diff?.diffImage, dirName);
+
+          return renderPageCard({
+            title: pageLabel,
+            subtitle: `Similarity ${formatPercent(page.diff?.similarity)} · Base ${formatMs(page.base?.timing?.loadTimeMs)} / Target ${formatMs(page.target?.timing?.loadTimeMs)}`,
+            baseImg,
+            targetImg,
+            diffImg,
+            styleDiff: page.styleDiff?.differences,
+          });
+        }).join('');
+
+        return `
+          <div class="hero">
+            <div>
+              <div class="pill">Batch ${payload.batchId || ''}</div>
+              <h1>Whole-site visual report</h1>
+              <p>${paths.length} pages compared | ${payload.baseRoot || ''} → ${payload.targetRoot || ''}</p>
+            </div>
+            <a class="btn-primary" href="${rawJsonUrl}" target="_blank" rel="noreferrer">View raw JSON</a>
+          </div>
+
+          <div class="grid">
+            <div class="card">
+              <div class="label">Average similarity</div>
+              <div class="stat">${formatPercent(summary.averageSimilarity)}</div>
+              <div class="muted">Avg differing pixels: ${formatNumber(summary.averageDiffPixels)}</div>
+            </div>
+            <div class="card">
+              <div class="label">Average load (ms)</div>
+              <div class="chips">
+                <span class="pill" style="background:#dcfce7;color:#166534;">Base ${formatMs(summary.averageBaseLoadMs)}</span>
+                <span class="pill" style="background:#fee2e2;color:#9f1239;">Target ${formatMs(summary.averageTargetLoadMs)}</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="label">Scope</div>
+              <div class="muted">Base root: <a href="${payload.baseRoot || '#'}" target="_blank" rel="noreferrer">${payload.baseRoot || '–'}</a></div>
+              <div class="muted">Target root: <a href="${payload.targetRoot || '#'}" target="_blank" rel="noreferrer">${payload.targetRoot || '–'}</a></div>
+              <div class="muted">Pages: ${paths.length}</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 12px; display: grid; gap: 12px;">
+            ${cards}
+          </div>
+        `;
+      };
+
+      const renderReport = (payload) => {
+        if (payload && payload.batchId) {
+          app.innerHTML = renderBatch(payload);
+        } else {
+          app.innerHTML = renderSingle(payload);
+        }
+      };
+
+      const showError = (message) => {
+        app.innerHTML = `<div class="error">${message}</div>`;
+      };
+
+      fetch(rawJsonUrl)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`Failed to load report (${res.status})`);
+          }
+          return res.json();
+        })
+        .then(renderReport)
+        .catch((err) => {
+          console.error('Failed to render report', err);
+          showError('Unable to load report details. Ensure the JSON link is accessible.');
+        });
+    })();
+  </script>
+</body>
+
+</html>

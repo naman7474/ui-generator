@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visual Report - run-2025-12-03T04-35-55-700Z</title>
+  <style>
+    :root { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #0f172a; background: #f8fafc; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 32px 18px 48px; }
+    .page { max-width: 1100px; margin: 0 auto; }
+    h1 { margin: 0; font-size: 30px; letter-spacing: -0.02em; }
+    p { margin: 0; color: #475569; }
+    .hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; background: #e0f2fe; color: #075985; font-weight: 700; font-size: 12px; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08); margin-bottom: 14px; }
+    .muted { color: #64748b; font-size: 14px; }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; align-items: start; }
+    figure { margin: 0; }
+    figure img { width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; background: #0f172a; }
+    .stat { font-size: 28px; font-weight: 800; }
+    .label { font-weight: 700; color: #334155; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; font-weight: 700; text-decoration: none; }
+    .chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <div>
+        <div class="pill">Run run-2025-12-03T04-35-55-700Z</div>
+        <h1>Visual comparison report</h1>
+        <p>Generated 2025-12-03T04:36:09.544Z</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <a class="btn-primary" href="./report.json">View raw JSON</a>
+        
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="label">Visual similarity</div>
+        <div class="stat">30.34%</div>
+        <div class="muted">6,96,996 pixels differed of 10,00,500</div>
+      </div>
+      <div class="card">
+        <div class="label">Load time (ms)</div>
+        <div class="chips">
+          <span class="pill" style="background:#dcfce7;color:#166534;">Base 801 ms</span>
+          <span class="pill" style="background:#fee2e2;color:#9f1239;">Target 1071 ms</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="label">URLs</div>
+        <div class="muted"><strong>Base:</strong> <a href="https://shop.kilrr.com">https://shop.kilrr.com</a></div>
+        <div class="muted"><strong>Target:</strong> <a href="http://localhost:3000/artifacts/pixelgen/run-2025-12-03T04-33-45-365Z/iteration-00/site/index.html">http://localhost:3000/artifacts/pixelgen/run-2025-12-03T04-33-45-365Z/iteration-00/site/index.html</a></div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 8px;">
+      <figure class="card">
+        <div class="label">Base page (base)</div>
+        <img src="base.png" alt="Base screenshot" />
+      </figure>
+      <figure class="card">
+        <div class="label">Target page (target)</div>
+        <img src="target.png" alt="Target screenshot" />
+      </figure>
+    </div>
+
+    <div class="card" style="margin-top: 8px;">
+       <div class="label">Diff Heatmap</div>
+       <img src="diff.png" alt="Diff heatmap" style="width: 100%; border-radius: 8px; border: 1px solid #e2e8f0;" />
+    </div>
+
+    
+
+    
+  </div>
+</body>
+</html>
