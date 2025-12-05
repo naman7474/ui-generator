@@ -515,19 +515,37 @@ async def generate_structure(messages: List[Any], model: str) -> GeneratedStruct
     last_error: Optional[Exception] = None
     full_response = ""
 
+    # Define proper item schemas for slots with non-empty properties
+    image_slot_schema = gtypes.Schema(
+        type=gtypes.Type.OBJECT,
+        properties={
+            "id": gtypes.Schema(type=gtypes.Type.STRING),
+            "description": gtypes.Schema(type=gtypes.Type.STRING),
+            "dimensions": gtypes.Schema(
+                type=gtypes.Type.OBJECT,
+                properties={
+                    "w": gtypes.Schema(type=gtypes.Type.INTEGER),
+                    "h": gtypes.Schema(type=gtypes.Type.INTEGER),
+                }
+            ),
+        }
+    )
+
+    icon_slot_schema = gtypes.Schema(
+        type=gtypes.Type.OBJECT,
+        properties={
+            "id": gtypes.Schema(type=gtypes.Type.STRING),
+            "name": gtypes.Schema(type=gtypes.Type.STRING),
+        }
+    )
+
     structure_schema = gtypes.Schema(
         type=gtypes.Type.OBJECT,
         required=["html"],
         properties={
             "html": gtypes.Schema(type=gtypes.Type.STRING),
-            "imageSlots": gtypes.Schema(
-                type=gtypes.Type.ARRAY,
-                items=gtypes.Schema(type=gtypes.Type.OBJECT),
-            ),
-            "iconSlots": gtypes.Schema(
-                type=gtypes.Type.ARRAY,
-                items=gtypes.Schema(type=gtypes.Type.OBJECT),
-            ),
+            "imageSlots": gtypes.Schema(type=gtypes.Type.ARRAY, items=image_slot_schema),
+            "iconSlots": gtypes.Schema(type=gtypes.Type.ARRAY, items=icon_slot_schema),
         }
     )
 
@@ -675,13 +693,37 @@ async def generate_section_api(req: SectionGenerationRequest):
     messages.append({"role": "user", "content": content})
 
     # Expect a tiny JSON {"html":"...","imageSlots":[],"iconSlots":[]}
+    # Define proper item schemas for slots with non-empty properties
+    image_slot_schema = gtypes.Schema(
+        type=gtypes.Type.OBJECT,
+        properties={
+            "id": gtypes.Schema(type=gtypes.Type.STRING),
+            "description": gtypes.Schema(type=gtypes.Type.STRING),
+            "dimensions": gtypes.Schema(
+                type=gtypes.Type.OBJECT,
+                properties={
+                    "w": gtypes.Schema(type=gtypes.Type.INTEGER),
+                    "h": gtypes.Schema(type=gtypes.Type.INTEGER),
+                }
+            ),
+        }
+    )
+
+    icon_slot_schema = gtypes.Schema(
+        type=gtypes.Type.OBJECT,
+        properties={
+            "id": gtypes.Schema(type=gtypes.Type.STRING),
+            "name": gtypes.Schema(type=gtypes.Type.STRING),
+        }
+    )
+
     schema = gtypes.Schema(
         type=gtypes.Type.OBJECT,
         required=["html"],
         properties={
             "html": gtypes.Schema(type=gtypes.Type.STRING),
-            "imageSlots": gtypes.Schema(type=gtypes.Type.ARRAY, items=gtypes.Schema(type=gtypes.Type.OBJECT)),
-            "iconSlots": gtypes.Schema(type=gtypes.Type.ARRAY, items=gtypes.Schema(type=gtypes.Type.OBJECT)),
+            "imageSlots": gtypes.Schema(type=gtypes.Type.ARRAY, items=image_slot_schema),
+            "iconSlots": gtypes.Schema(type=gtypes.Type.ARRAY, items=icon_slot_schema),
         }
     )
     full = ""

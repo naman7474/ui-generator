@@ -124,44 +124,72 @@ async def stream_gemini_response(
 
     config = types.GenerateContentConfig(**config_kwargs)
 
-    try:
-        stream = await client.aio.models.generate_content_stream(
-            model=model_name,
-            contents=contents,
-            config=config,
-        )
-        async for chunk in stream:
-            # Prefer SDK-provided incremental text which handles both plain and structured outputs
-            chunk_text = getattr(chunk, "text", None)
-            if chunk_text:
-                full_response += chunk_text
-                await callback(chunk_text)
-                continue
+    max_retries = 3
+    retry_delay = 2  # seconds
 
-            # Fallback: accumulate from parts
-            if chunk.candidates and len(chunk.candidates) > 0 and chunk.candidates[0].content:
-                for part in chunk.candidates[0].content.parts:
-                    # Inline data (e.g., when using response_mime_type) can appear here
-                    if getattr(part, "inline_data", None) and getattr(part.inline_data, "data", None):
-                        try:
-                            text = base64.b64decode(part.inline_data.data).decode("utf-8", errors="ignore")
-                        except Exception:
-                            text = ""
-                        if text:
-                            full_response += text
-                            await callback(text)
+    for attempt in range(max_retries):
+        try:
+            stream = await client.aio.models.generate_content_stream(
+                model=model_name,
+                contents=contents,
+                config=config,
+            )
+            async for chunk in stream:
+                # Prefer SDK-provided incremental text which handles both plain and structured outputs
+                chunk_text = getattr(chunk, "text", None)
+                if chunk_text:
+                    full_response += chunk_text
+                    await callback(chunk_text)
+                    continue
+
+                # Fallback: accumulate from parts
+                # FIXED: Added check for .parts not being None
+                if (
+                    chunk.candidates
+                    and len(chunk.candidates) > 0
+                    and chunk.candidates[0].content
+                    and getattr(chunk.candidates[0].content, "parts", None)
+                ):
+                    for part in chunk.candidates[0].content.parts:
+                        # Inline data (e.g., when using response_mime_type) can appear here
+                        if getattr(part, "inline_data", None) and getattr(part.inline_data, "data", None):
+                            try:
+                                text = base64.b64decode(part.inline_data.data).decode("utf-8", errors="ignore")
+                            except Exception:
+                                text = ""
+                            if text:
+                                full_response += text
+                                await callback(text)
+                                continue
+                        # Thought parts for thinking models
+                        if getattr(part, "thought", False):
+                            # ignore thoughts for output assembly
                             continue
-                    # Thought parts for thinking models
-                    if getattr(part, "thought", False):
-                        # ignore thoughts for output assembly
-                        continue
-                    # Regular text parts
-                    if getattr(part, "text", None):
-                        full_response += part.text
-                        await callback(part.text)
-    except Exception as e:
-        print(f"Error calling Gemini API: {e}")
-        raise
+                        # Regular text parts
+                        if getattr(part, "text", None):
+                            full_response += part.text
+                            await callback(part.text)
+            # If we get here, streaming completed successfully
+            break
+
+        except Exception as e:
+            error_str = str(e)
+            is_retryable = (
+                "503" in error_str or 
+                "UNAVAILABLE" in error_str or 
+                "timed out" in error_str.lower() or
+                "timeout" in error_str.lower()
+            )
+
+            if is_retryable and attempt < max_retries - 1:
+                print(f"Gemini API error (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s: {e}")
+                import asyncio
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+                continue
+            else:
+                print(f"Error calling Gemini API: {e}")
+                raise
 
     completion_time = time.time() - start_time
     return {"duration": completion_time, "code": full_response}

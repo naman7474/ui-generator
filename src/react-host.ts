@@ -139,6 +139,16 @@ const replaceTailwindCdnScriptWithCss = (html: string): string => {
     return html.replace(re, link);
 };
 
+// Remove inline Tailwind config if present (avoids 'tailwind is not defined' when we only include Tailwind CSS)
+const stripTailwindInlineConfigScripts = (html: string): string => {
+    const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
+    return html.replace(re, (m: string, body: string) => {
+        const b = (body || '').toLowerCase();
+        if (b.includes('tailwind.config') || b.includes('window.tailwind')) return '';
+        return m;
+    });
+};
+
 const stripExternalGoogleFonts = (html: string): string => {
     let out = html;
     out = out.replace(/<link[^>]*href=["']https?:\/\/fonts\.googleapis\.com[^>]*>/gi, '');
@@ -843,10 +853,12 @@ export const writeReactBundle = async (
         } else if (ext === '.html') {
             content = stripExternalGoogleFonts(
                 replaceTailwindCdnScriptWithCss(
-                    ensureModuleTypeForLocalScripts(
-                        rewriteRootRelativeToRelative(
-                            ensureRelativeHasJsExtension(
-                                rewriteQuotedExtensionToJs(content)
+                    stripTailwindInlineConfigScripts(
+                        ensureModuleTypeForLocalScripts(
+                            rewriteRootRelativeToRelative(
+                                ensureRelativeHasJsExtension(
+                                    rewriteQuotedExtensionToJs(content)
+                                )
                             )
                         )
                     )
@@ -945,6 +957,24 @@ export default function App() { return React.createElement('div', { className: '
     const relativeDir = path.relative(config.outputDir, entryDir);
     const fileName = path.basename(entryHtmlPath);
     const localUrl = getLocalArtifactUrl(path.join(relativeDir, fileName));
+
+    // Final safety pass on entry HTML: ensure script src points to .js, not .jsx/.tsx,
+    // and normalize Tailwind CDN usage to CSS link if still present.
+    try {
+        let html = await fs.readFile(entryHtmlPath, 'utf8');
+        const before = html;
+        // Reuse existing helpers to normalize quoted extensions and local script types
+        html = replaceTailwindCdnScriptWithCss(
+            ensureModuleTypeForLocalScripts(
+                ensureRelativeHasJsExtension(
+                    rewriteQuotedExtensionToJs(html)
+                )
+            )
+        );
+        if (html !== before) {
+            await fs.writeFile(entryHtmlPath, html, 'utf8');
+        }
+    } catch {}
 
     return { localUrl, entryPath: entryHtmlPath };
 };

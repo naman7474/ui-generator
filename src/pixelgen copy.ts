@@ -266,62 +266,43 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                     if (ph.test(text)) { text = text.replace(ph, placeholderFallback); changed = true; }
                 }
                 // Replace missing local assets/images/* references with fallback if the file does not exist
-                // Handle BOTH HTML syntax (src="...") AND JS object syntax (src: "...")
-                const localSrcPatterns = [
-                    // HTML: src="assets/images/..." or src='assets/images/...'
-                    /(src=)(["'])(\.\/|\/)?assets\/images\/([^"']+)\2/g,
-                    // JS object: src: "assets/images/..." or src: 'assets/images/...'
-                    /(src:\s*)(["'])(\.\/|\/)?assets\/images\/([^"']+)\2/g,
-                ];
-                for (const localSrcRe of localSrcPatterns) {
-                    text = await (async () => {
-                        let out = text; let m: RegExpExecArray | null;
-                        const re = new RegExp(localSrcRe.source, 'g');
-                        while ((m = re.exec(text)) !== null) {
-                            const whole = m[0];
-                            const prefix = m[1]; // "src=" or "src: "
-                            const q = m[2];
-                            const rel = (m[3] || '') + 'assets/images/' + m[4];
-                            const onDisk = path.join(siteDir, rel.replace(/^\//, ''));
-                            let exists = false;
-                            try { await fs.access(onDisk); exists = true; } catch { exists = false; }
-                            if (!exists && placeholderFallback) {
-                                const replacement = `${prefix}${q}${placeholderFallback}${q}`;
-                                out = out.replace(whole, replacement);
-                                changed = true;
-                            }
+                const localSrcRe = /(src=)(["'])(\.\/|\/)?assets\/images\/([^"']+)\2/g;
+                text = await (async () => {
+                    let out = text; let m: RegExpExecArray | null;
+                    const re = new RegExp(localSrcRe.source, 'g');
+                    while ((m = re.exec(text)) !== null) {
+                        const whole = m[0];
+                        const q = m[2];
+                        const rel = (m[3] || '') + 'assets/images/' + m[4];
+                        const onDisk = path.join(siteDir, rel.replace(/^\//, ''));
+                        let exists = false;
+                        try { await fs.access(onDisk); exists = true; } catch { exists = false; }
+                        if (!exists && placeholderFallback) {
+                            const replacement = `src=${q}${placeholderFallback}${q}`;
+                            out = out.replace(whole, replacement);
+                            changed = true;
                         }
-                        return out;
-                    })();
-                }
+                    }
+                    return out;
+                })();
                 // Replace absolute artifact URLs pointing to site/assets/images with fallback if missing
-                // Handle BOTH HTML and JS object syntax
-                const absoluteSrcPatterns = [
-                    // HTML: src="http://...site/assets/images/..."
-                    /(src=)(["'])(https?:\/\/[^'"\s>]+\/site\/assets\/images\/([^"']+))\2/g,
-                    // JS object: src: "http://...site/assets/images/..."
-                    /(src:\s*)(["'])(https?:\/\/[^'"\s>]+\/site\/assets\/images\/([^"']+))\2/g,
-                ];
-                for (const absRe of absoluteSrcPatterns) {
-                    text = await (async () => {
-                        let out = text; let m: RegExpExecArray | null;
-                        const re = new RegExp(absRe.source, 'g');
-                        while ((m = re.exec(text)) !== null) {
-                            const whole = m[0];
-                            const prefix = m[1];
-                            const file = m[4];
-                            const onDisk = path.join(siteDir, 'assets/images', file);
-                            let exists = false;
-                            try { await fs.access(onDisk); exists = true; } catch { exists = false; }
-                            if (!exists && placeholderFallback) {
-                                const replacement = `${prefix}${m[2]}${placeholderFallback}${m[2]}`;
-                                out = out.replace(whole, replacement);
-                                changed = true;
-                            }
+                text = await (async () => {
+                    let out = text; let m: RegExpExecArray | null;
+                    const re = /(src=)(["'])(https?:\/\/[^'"\s>]+\/site\/assets\/images\/([^"']+))\2/g;
+                    while ((m = re.exec(text)) !== null) {
+                        const whole = m[0];
+                        const file = m[4];
+                        const onDisk = path.join(siteDir, 'assets/images', file);
+                        let exists = false;
+                        try { await fs.access(onDisk); exists = true; } catch { exists = false; }
+                        if (!exists && placeholderFallback) {
+                            const replacement = `src=${m[2]}${placeholderFallback}${m[2]}`;
+                            out = out.replace(whole, replacement);
+                            changed = true;
                         }
-                        return out;
-                    })();
-                }
+                    }
+                    return out;
+                })();
                 // Also handle CSS url(...) forms pointing to assets/images
                 text = await (async () => {
                     let out = text; let m: RegExpExecArray | null;
@@ -329,7 +310,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                     while ((m = re.exec(text)) !== null) {
                         const whole = m[0];
                         const rel = m[2].replace(/^https?:\/\/[^/]+\/site\//, '');
-                        const onDisk = path.join(siteDir, rel.replace(/^\//, ''));
+                        const onDisk = path.join(siteDir, rel.replace(/^\//,''));
                         let exists = false;
                         try { await fs.access(onDisk); exists = true; } catch { exists = false; }
                         if (!exists && placeholderFallback) {
@@ -562,8 +543,7 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                     }
 
                     if (scaffoldSections) {
-                        // Pass the iteration directory; writeBaseReactScaffold will create its own 'site' subdir
-                        const scaffold = await writeBaseReactScaffold(iterDir, scaffoldSections);
+                        const scaffold = await writeBaseReactScaffold(siteDir, scaffoldSections);
                         localUrl = scaffold.localUrl; entryPath = scaffold.entryPath;
                         if (baseAssets) await injectAssetsIntoHtml(entryPath, path.dirname(entryPath), baseAssets);
                         const ctx = await gatherSiteContext(siteDir);
@@ -582,17 +562,12 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                 localUrl = r.localUrl; entryPath = r.entryPath;
             }
             // Post-process: rewrite image URLs in generated code to local asset paths
-            const entryDir = path.dirname(entryPath);
             if (baseAssets) {
+                const entryDir = path.dirname(entryPath);
                 const map = buildImageMap(baseAssets);
                 const fallback = baseAssets.heroCandidate ? `./${baseAssets.heroCandidate.replace(/\\/g, '/')}`
                     : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
                 await rewriteImageSourcesOnDisk(entryDir, map, fallback);
-                await enforceIconImportsOnDisk(entryDir);
-            } else {
-                // Even without baseAssets, clean up made-up image paths with a generic placeholder
-                const genericPlaceholder = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22300%22%20viewBox%3D%220%200%20400%20300%22%3E%3Crect%20fill%3D%22%23ddd%22%20width%3D%22400%22%20height%3D%22300%22%2F%3E%3Ctext%20fill%3D%22%23999%22%20font-family%3D%22sans-serif%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20x%3D%22200%22%20y%3D%22150%22%3EImage%3C%2Ftext%3E%3C%2Fsvg%3E';
-                await rewriteImageSourcesOnDisk(entryDir, new Map(), genericPlaceholder);
                 await enforceIconImportsOnDisk(entryDir);
             }
         } catch (e) {
@@ -624,18 +599,13 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
             const r2 = await writeReactBundle(iterDir, currentBundle!);
             localUrl = r2.localUrl; entryPath = r2.entryPath;
             // Post-process after recovery compile
-            const entryDir2 = path.dirname(entryPath);
             if (baseAssets) {
+                const entryDir = path.dirname(entryPath);
                 const map = buildImageMap(baseAssets);
                 const fallback = baseAssets.heroCandidate ? `./${baseAssets.heroCandidate.replace(/\\/g, '/')}`
                     : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
-                await rewriteImageSourcesOnDisk(entryDir2, map, fallback);
-                await enforceIconImportsOnDisk(entryDir2);
-            } else {
-                // Even without baseAssets, clean up made-up image paths with a generic placeholder
-                const genericPlaceholder = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22300%22%20viewBox%3D%220%200%20400%20300%22%3E%3Crect%20fill%3D%22%23ddd%22%20width%3D%22400%22%20height%3D%22300%22%2F%3E%3Ctext%20fill%3D%22%23999%22%20font-family%3D%22sans-serif%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20x%3D%22200%22%20y%3D%22150%22%3EImage%3C%2Ftext%3E%3C%2Fsvg%3E';
-                await rewriteImageSourcesOnDisk(entryDir2, new Map(), genericPlaceholder);
-                await enforceIconImportsOnDisk(entryDir2);
+                await rewriteImageSourcesOnDisk(entryDir, map, fallback);
+                await enforceIconImportsOnDisk(entryDir);
             }
         }
 
@@ -759,20 +729,15 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                         if (useChat) { try { chatHistory.push({ role: 'user', content: compileOnly }); capHistory(); } catch { } }
                         try {
                             const rewritten2 = await writeReactBundle(iterDir, currentBundle!);
-                            const entryDir3 = path.dirname(rewritten2.entryPath);
                             if (baseAssets) {
+                                const entryDir2 = path.dirname(rewritten2.entryPath);
                                 // Ensure images use local assets paths
                                 const map2 = buildImageMap(baseAssets);
                                 const fallback2 = baseAssets.heroCandidate ? `./${baseAssets.heroCandidate.replace(/\\/g, '/')}`
                                     : (baseAssets.assets.images[0] ? `./${baseAssets.assets.images[0].localPath.replace(/\\/g, '/')}` : undefined);
-                                await rewriteImageSourcesOnDisk(entryDir3, map2, fallback2);
-                                await enforceIconImportsOnDisk(entryDir3);
-                                await injectAssetsIntoHtml(rewritten2.entryPath, entryDir3, baseAssets);
-                            } else {
-                                // Even without baseAssets, clean up made-up image paths with a generic placeholder
-                                const genericPlaceholder = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22300%22%20viewBox%3D%220%200%20400%20300%22%3E%3Crect%20fill%3D%22%23ddd%22%20width%3D%22400%22%20height%3D%22300%22%2F%3E%3Ctext%20fill%3D%22%23999%22%20font-family%3D%22sans-serif%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20x%3D%22200%22%20y%3D%22150%22%3EImage%3C%2Ftext%3E%3C%2Fsvg%3E';
-                                await rewriteImageSourcesOnDisk(entryDir3, new Map(), genericPlaceholder);
-                                await enforceIconImportsOnDisk(entryDir3);
+                                await rewriteImageSourcesOnDisk(entryDir2, map2, fallback2);
+                                await enforceIconImportsOnDisk(entryDir2);
+                                await injectAssetsIntoHtml(rewritten2.entryPath, entryDir2, baseAssets);
                             }
                         } catch (e) {
                             console.warn('[PixelGen] Compile-only fix did not produce a compilable bundle:', e instanceof Error ? e.message : String(e));

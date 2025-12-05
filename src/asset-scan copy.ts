@@ -269,16 +269,7 @@ export const scanBaseAssets = async (
     const selectorFor = (el: HTMLElement): string => {
       let s = el.tagName.toLowerCase();
       const cls = (el.className || '').toString().trim();
-      if (cls) {
-        // Filter out classes containing special characters that break querySelector
-        // Tailwind arbitrary values like text-[#232323] contain brackets
-        const safeClasses = cls.split(/\s+/)
-          .filter(c => c && !/[\[\]()#:!]/.test(c))  // Skip classes with [, ], (, ), #, :, !
-          .slice(0, 2);
-        if (safeClasses.length > 0) {
-          s += '.' + safeClasses.join('.');
-        }
-      }
+      if (cls) s += '.' + cls.split(/\s+/).slice(0, 2).join('.');
       return s;
     };
 
@@ -315,15 +306,6 @@ export const scanBaseAssets = async (
       layoutHint: getLayoutHint(el)
     }));
 
-    // Safe querySelector that won't throw on invalid selectors
-    const safeQS = (sel: string): HTMLElement | null => {
-      try {
-        return document.querySelector(sel) as HTMLElement | null;
-      } catch {
-        return null;
-      }
-    };
-
     // Map images to nearest section by containment of center point
     const sectionMappings = sections.map((sec) => ({
       name: sec.name,
@@ -334,32 +316,26 @@ export const scanBaseAssets = async (
       images: [] as Array<any>,
       backgroundColor: (document.elementFromPoint(Math.max(0, sec.rect.left + 1), Math.max(0, sec.rect.top + 1)) as HTMLElement | null)?.style?.backgroundColor,
       backgroundImage: (() => {
-        try {
-          const el = safeQS(sec.selector);
-          if (!el) return undefined;
-          const cs = window.getComputedStyle(el);
-          const bg = cs.getPropertyValue('background-image');
-          return /url\(/.test(bg) ? bg : undefined;
-        } catch { return undefined; }
+        const el = document.querySelector(sec.selector) as HTMLElement | null;
+        if (!el) return undefined;
+        const cs = window.getComputedStyle(el);
+        const bg = cs.getPropertyValue('background-image');
+        return /url\(/.test(bg) ? bg : undefined;
       })(),
       padding: (() => {
-        try {
-          const el = safeQS(sec.selector); if (!el) return undefined; const cs = window.getComputedStyle(el);
-          const p = [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft].join(' ');
-          return p;
-        } catch { return undefined; }
+        const el = document.querySelector(sec.selector) as HTMLElement | null; if (!el) return undefined; const cs = window.getComputedStyle(el);
+        const p = [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft].join(' ');
+        return p;
       })(),
-      childCount: (() => { try { const el = safeQS(sec.selector); return el ? el.children.length : undefined; } catch { return undefined; } })(),
-      gridColumns: (() => { try { const el = safeQS(sec.selector); if (!el) return undefined; const cs = window.getComputedStyle(el); const g = cs.gridTemplateColumns; if (!g || g === 'none') return undefined; return g.split(' ').length; } catch { return undefined; } })(),
-      flexGap: (() => { try { const el = safeQS(sec.selector); if (!el) return undefined; const cs = window.getComputedStyle(el); const gap = cs.gap; return gap && gap !== 'normal' ? gap : undefined; } catch { return undefined; } })(),
+      childCount: (() => { const el = document.querySelector(sec.selector) as HTMLElement | null; return el ? el.children.length : undefined; })(),
+      gridColumns: (() => { const el = document.querySelector(sec.selector) as HTMLElement | null; if (!el) return undefined; const cs = window.getComputedStyle(el); const g = cs.gridTemplateColumns; if (!g || g === 'none') return undefined; return g.split(' ').length; })(),
+      flexGap: (() => { const el = document.querySelector(sec.selector) as HTMLElement | null; if (!el) return undefined; const cs = window.getComputedStyle(el); const gap = cs.gap; return gap && gap !== 'normal' ? gap : undefined; })(),
       textContent: (() => {
-        try {
-          const el = safeQS(sec.selector); if (!el) return undefined;
-          const headings = Array.from(el.querySelectorAll('h1,h2,h3')).map(h => (h.textContent || '').trim()).filter(Boolean);
-          const paragraphs = Array.from(el.querySelectorAll('p')).map(p => (p.textContent || '').trim()).filter(Boolean).slice(0, 20);
-          const buttons = Array.from(el.querySelectorAll('a,button')).map(b => (b.textContent || '').trim()).filter(Boolean).slice(0, 20);
-          return { headings, paragraphs, buttons };
-        } catch { return undefined; }
+        const el = document.querySelector(sec.selector) as HTMLElement | null; if (!el) return undefined;
+        const headings = Array.from(el.querySelectorAll('h1,h2,h3')).map(h => (h.textContent || '').trim()).filter(Boolean);
+        const paragraphs = Array.from(el.querySelectorAll('p')).map(p => (p.textContent || '').trim()).filter(Boolean).slice(0, 20);
+        const buttons = Array.from(el.querySelectorAll('a,button')).map(b => (b.textContent || '').trim()).filter(Boolean).slice(0, 20);
+        return { headings, paragraphs, buttons };
       })()
     }));
 
@@ -569,8 +545,19 @@ export const scanBaseAssets = async (
         width: im.width,
         height: im.height,
         position: im.position,
-      })),
-      textContent: s.textContent, // Already extracted in page.evaluate
+      }))
+    })).map((s: any) => ({
+      ...s,
+      textContent: ((): any => {
+        try {
+          const secEl = s.selector ? document.querySelector(s.selector) as HTMLElement | null : null;
+          if (!secEl) return undefined;
+          const headings = Array.from(secEl.querySelectorAll('h1,h2,h3')).map((h: any) => (h.textContent || '').trim()).filter(Boolean);
+          const paragraphs = Array.from(secEl.querySelectorAll('p')).map((p: any) => (p.textContent || '').trim()).filter(Boolean).slice(0, 20);
+          const buttons = Array.from(secEl.querySelectorAll('a,button')).map((b: any) => (b.textContent || '').trim()).filter(Boolean).slice(0, 20);
+          return { headings, paragraphs, buttons };
+        } catch { return undefined; }
+      })()
     })),
   };
 };
