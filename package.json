@@ -27,6 +27,7 @@
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.84.0",
     "@types/minimatch": "^5.1.2",
+    "cheerio": "^1.1.2",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",
     "esbuild": "^0.27.0",
@@ -35,11 +36,13 @@
     "pixelmatch": "^7.1.0",
     "playwright": "^1.56.1",
     "pngjs": "^7.0.0",
+    "postcss": "^8.5.6",
     "ssim.js": "^4.0.1",
     "undici": "^6.22.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@types/cheerio": "^0.22.35",
     "@types/commander": "^2.12.0",
     "@types/express": "^5.0.5",
     "@types/node": "^24.10.1",

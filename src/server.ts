@@ -299,7 +299,7 @@ app.post('/pixelgen/run', async (req, res) => {
   const pixelGenSchema = z.object({
     baseUrl: z.string().url(),
     stack: z.string().optional(),
-    devices: z.array(z.enum(['desktop','mobile'])).optional(),
+    devices: z.array(z.enum(['desktop', 'mobile'])).optional(),
     minSimilarity: z.number().min(0).max(1).optional(),
     maxIterations: z.number().int().positive().max(20).optional(),
     fullPage: z.boolean().optional(),
@@ -314,14 +314,25 @@ app.post('/pixelgen/run', async (req, res) => {
 
   try {
     // @ts-ignore
-    const result = await import('./pixelgen').then(m => m.runPixelGen(parsed.data));
+    const result = await import('./pixelgen-legacy').then(m => m.runPixelGen(parsed.data));
     // Ensure artifactsUrl is a proper public URL via storage provider when possible
     try {
       const artifactsUrl = await storage.artifactsUrl(path.join(config.outputDir, 'pixelgen', result.jobId));
       if (artifactsUrl) {
         result.artifactsUrl = artifactsUrl;
       }
-    } catch {}
+    } catch { }
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+  }
+});
+
+app.post('/pixelgen/v2/run', async (req, res) => {
+  try {
+    // @ts-ignore
+    const result = await import('./pixelgen-v2').then(m => m.runPixelGenV2(req.body));
     res.json(result);
   } catch (err) {
     console.error(err);
