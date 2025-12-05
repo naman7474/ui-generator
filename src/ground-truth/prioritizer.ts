@@ -1,146 +1,228 @@
+// src/ground-truth/prioritizer.ts
+//
+// IMPROVED VERSION with:
+// 1. Validation of selectors
+// 2. Diversity (not all changes from same element)
+// 3. Better scoring
 
 import { StyleChange } from './types';
 
-interface PriorityFactors {
-    visualImpact: number;      // How much does this property affect appearance
-    elementSize: number;       // Larger elements = higher priority
-    aboveFold: number;         // Above-the-fold elements are more important
-    categoryWeight: number;    // Layout > Colors > Typography > Effects
-}
-
-const CATEGORY_WEIGHTS: Record<string, number> = {
-    layout: 10,
-    color: 8,
-    typography: 6,
-    spacing: 5,
-    effects: 3
-};
-
+/**
+ * Property impact scores - how visually impactful is changing this property?
+ */
 const PROPERTY_IMPACT: Record<string, number> = {
-    // High impact (10)
-    'display': 10,
-    'background-color': 10,
-    'color': 10,
-    'width': 9,
-    'height': 9,
+    // High impact - layout
+    'display': 100,
+    'position': 90,
+    'width': 85,
+    'height': 85,
+    'flex-direction': 80,
+    'grid-template-columns': 80,
+    'justify-content': 75,
+    'align-items': 75,
 
-    // Medium impact (5-8)
-    'font-size': 8,
-    'padding-top': 7,
-    'padding-bottom': 7,
-    'margin-top': 7,
-    'margin-bottom': 7,
-    'flex-direction': 7,
-    'justify-content': 6,
-    'align-items': 6,
-    'gap': 6,
+    // High impact - colors
+    'background-color': 90,
+    'color': 85,
+    'border-color': 60,
 
-    // Lower impact (1-4)
-    'padding-left': 5,
-    'padding-right': 5,
-    'margin-left': 5,
-    'margin-right': 5,
-    'font-weight': 4,
-    'line-height': 4,
-    'border-radius': 3,
-    'letter-spacing': 2,
-    'opacity': 2
+    // Medium impact - spacing
+    'padding-top': 50,
+    'padding-right': 50,
+    'padding-bottom': 50,
+    'padding-left': 50,
+    'margin-top': 45,
+    'margin-right': 45,
+    'margin-bottom': 45,
+    'margin-left': 45,
+    'gap': 50,
+
+    // Medium impact - typography
+    'font-size': 70,
+    'font-weight': 60,
+    'font-family': 55,
+    'line-height': 40,
+    'text-align': 45,
+
+    // Lower impact - borders/effects
+    'border-width': 40,
+    'border-radius': 35,
+    'box-shadow': 30,
+    'opacity': 50,
+    'transform': 30,
+
+    // Default
+    'default': 25
 };
 
-const computePriority = (change: StyleChange, viewportHeight: number = 900): number => {
+/**
+ * Category weights
+ */
+const CATEGORY_WEIGHT: Record<string, number> = {
+    'layout': 100,
+    'color': 90,
+    'typography': 70,
+    'spacing': 60,
+    'effects': 40
+};
+
+/**
+ * Calculate priority score for a change
+ */
+const calculatePriority = (change: StyleChange): number => {
     let score = 0;
 
-    // 1. Property impact (0-10)
-    score += PROPERTY_IMPACT[change.property] || 5;
+    // Property impact
+    const propImpact = PROPERTY_IMPACT[change.property] || PROPERTY_IMPACT['default'];
+    score += propImpact;
 
-    // 2. Category weight (0-10)
-    score += CATEGORY_WEIGHTS[change.category] || 5;
+    // Category weight
+    const catWeight = CATEGORY_WEIGHT[change.category] || 50;
+    score += catWeight * 0.5;
 
-    // 3. Element size (0-10)
+    // Element size (larger elements are more visually important)
     const area = change.rect.width * change.rect.height;
-    const sizeScore = Math.min(10, area / 10000); // Normalize: 100k px² = max score
-    score += sizeScore;
+    const areaScore = Math.min(100, Math.sqrt(area) / 10);
+    score += areaScore;
 
-    // 4. Above-the-fold bonus (0-10)
-    if (change.rect.y < viewportHeight) {
-        const foldScore = 10 * (1 - change.rect.y / viewportHeight);
-        score += foldScore;
+    // Above-the-fold bonus (y < 900px)
+    if (change.rect.y < 900) {
+        score += 50;
     }
 
-    // 5. Section importance (bonus for header/hero)
-    if (change.section) {
-        const lowerSection = change.section.toLowerCase();
-        if (lowerSection.includes('header') || lowerSection.includes('hero')) {
-            score += 5;
-        } else if (lowerSection.includes('nav')) {
-            score += 4;
-        } else if (lowerSection.includes('footer')) {
-            score += 2;
-        }
+    // Very top of page bonus
+    if (change.rect.y < 200) {
+        score += 30;
+    }
+
+    // Penalize very small elements
+    if (area < 100) {
+        score -= 30;
+    }
+
+    // Penalize off-screen elements
+    if (change.rect.y > 2000) {
+        score -= 40;
     }
 
     return score;
 };
 
-export const prioritizeChanges = (
-    changes: StyleChange[],
-    limit: number = 10,
-    viewportHeight: number = 900
-): StyleChange[] => {
-    // Compute priority for each change
-    const withPriority = changes.map(change => ({
-        ...change,
-        priority: computePriority(change, viewportHeight)
-    }));
-
-    // Sort by priority (descending)
-    withPriority.sort((a, b) => b.priority - a.priority);
-
-    // Deduplicate: if same selector+property appears multiple times, keep highest priority
-    const seen = new Set<string>();
-    const deduplicated: StyleChange[] = [];
-
-    for (const change of withPriority) {
-        const key = `${change.cssSelector}|${change.property}`;
-        if (!seen.has(key)) {
-            seen.add(key);
-            deduplicated.push(change);
-        }
+/**
+ * Validate a change has required fields
+ */
+const isValidChange = (change: StyleChange): boolean => {
+    if (!change.cssSelector || change.cssSelector.trim() === '') {
+        return false;
     }
-
-    // Return top N
-    return deduplicated.slice(0, limit);
+    if (!change.property || change.property.trim() === '') {
+        return false;
+    }
+    if (change.expected === undefined || change.expected === null || change.expected === '') {
+        return false;
+    }
+    // Skip changes where expected equals actual (shouldn't happen but let's be safe)
+    if (change.expected === change.actual) {
+        return false;
+    }
+    return true;
 };
 
 /**
- * Group changes by section for batch processing
+ * Prioritize changes and return top N with diversity
  */
-export const groupChangesBySection = (changes: StyleChange[]): Map<string, StyleChange[]> => {
-    const groups = new Map<string, StyleChange[]>();
+export const prioritizeChanges = (
+    changes: StyleChange[],
+    limit: number = 10
+): StyleChange[] => {
+    // Filter out invalid changes
+    const validChanges = changes.filter(isValidChange);
+
+    if (validChanges.length === 0) {
+        console.log('[Prioritizer] No valid changes to prioritize');
+        return [];
+    }
+
+    // Score all changes
+    const scored = validChanges.map(change => ({
+        change,
+        score: calculatePriority(change)
+    }));
+
+    // Sort by score descending
+    scored.sort((a, b) => b.score - a.score);
+
+    // Select with diversity - don't take all changes from the same selector
+    const selected: StyleChange[] = [];
+    const selectorCounts = new Map<string, number>();
+    const MAX_PER_SELECTOR = 3; // Max changes per element
+
+    for (const { change, score } of scored) {
+        if (selected.length >= limit) break;
+
+        const count = selectorCounts.get(change.cssSelector) || 0;
+        if (count >= MAX_PER_SELECTOR) {
+            continue; // Skip, already have enough for this element
+        }
+
+        selected.push(change);
+        selectorCounts.set(change.cssSelector, count + 1);
+    }
+
+    // If we didn't get enough due to diversity constraints, fill in
+    if (selected.length < limit) {
+        for (const { change } of scored) {
+            if (selected.length >= limit) break;
+            if (!selected.includes(change)) {
+                selected.push(change);
+            }
+        }
+    }
+
+    console.log(`[Prioritizer] Selected ${selected.length} changes from ${selectorCounts.size} unique selectors`);
+
+    // Log top changes for debugging
+    for (let i = 0; i < Math.min(5, selected.length); i++) {
+        const c = selected[i];
+        console.log(`[Prioritizer] #${i + 1}: ${c.cssSelector.slice(0, 40)}... { ${c.property}: ${c.expected.slice(0, 20)}... }`);
+    }
+
+    return selected;
+};
+
+/**
+ * Group changes by their CSS selector
+ */
+export const groupChangesBySelector = (
+    changes: StyleChange[]
+): Map<string, StyleChange[]> => {
+    const grouped = new Map<string, StyleChange[]>();
+
+    for (const change of changes) {
+        if (!change.cssSelector) continue;
+
+        const existing = grouped.get(change.cssSelector) || [];
+        existing.push(change);
+        grouped.set(change.cssSelector, existing);
+    }
+
+    return grouped;
+};
+
+/**
+ * Group changes by section
+ */
+export const groupChangesBySection = (
+    changes: StyleChange[]
+): Map<string, StyleChange[]> => {
+    const grouped = new Map<string, StyleChange[]>();
 
     for (const change of changes) {
         const section = change.section || 'global';
-        if (!groups.has(section)) {
-            groups.set(section, []);
-        }
-        groups.get(section)!.push(change);
+        const existing = grouped.get(section) || [];
+        existing.push(change);
+        grouped.set(section, existing);
     }
 
-    return groups;
-};
-
-/**
- * Group changes by selector for efficient CSS generation
- */
-export const groupChangesBySelector = (changes: StyleChange[]): Map<string, StyleChange[]> => {
-    const groups = new Map<string, StyleChange[]>();
-
-    for (const change of changes) {
-        if (!groups.has(change.cssSelector)) {
-            groups.set(change.cssSelector, []);
-        }
-        groups.get(change.cssSelector)!.push(change);
-    }
-
-    return groups;
+    return grouped;
 };

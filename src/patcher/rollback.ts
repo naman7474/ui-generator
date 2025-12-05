@@ -10,7 +10,8 @@ export const rollbackChange = async (
     overridesPath: string,
     change: StyleChange
 ): Promise<void> => {
-    await removeOverride(overridesPath, change);
+    // removeOverride expects selector/property, not a StyleChange object
+    await removeOverride(overridesPath, change.cssSelector, change.property);
 };
 
 /**
