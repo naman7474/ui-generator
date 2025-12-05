@@ -36,6 +36,41 @@ export interface StyleComparisonResult {
   differences: StyleDifference[];
 }
 
+export const filterSignificantDifferences = (
+  differences: StyleDifference[],
+  limit: number = 10,
+): StyleDifference[] => {
+  const prioritized = differences.filter((diff) => {
+    // Skip identical or whitespace-only differences
+    if (diff.baseValue === diff.targetValue) return false;
+    if (diff.baseValue.replace(/\s+/g, '') === diff.targetValue.replace(/\s+/g, '')) return false;
+
+    // Skip sub-pixel or negligible numeric changes for key dimensions
+    const considerNumeric = (prop: string) => /^(width|height|margin|padding|top|left|right|bottom|gap|font-size|line-height)$/i.test(prop);
+    if (considerNumeric(diff.property)) {
+      const base = parseFloat(diff.baseValue);
+      const target = parseFloat(diff.targetValue);
+      if (Number.isFinite(base) && Number.isFinite(target)) {
+        if (Math.abs(base - target) < 2) return false;
+      }
+    }
+
+    return true;
+  }).sort((a, b) => {
+    const priority = (d: StyleDifference) => {
+      const p = d.property.toLowerCase();
+      if (p.includes('color') || p.includes('background')) return 0; // high visual impact
+      if (p.includes('display') || p.includes('flex') || p.includes('grid') || ['top','left','right','bottom','position','z-index','width','height','gap'].some(k => p.includes(k))) return 1; // layout
+      if (p.includes('font') || p.includes('text')) return 2; // typography
+      if (p.includes('margin') || p.includes('padding')) return 3; // spacing
+      return 4; // misc
+    };
+    return priority(a) - priority(b);
+  });
+
+  return prioritized.slice(0, Math.max(1, limit));
+};
+
 const RELEVANT_STYLES = [
   // Spacing
   'padding-top', 'padding-right', 'padding-bottom', 'padding-left',

@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from './config';
-import { StyleDifference } from './style-diff';
+import { StyleDifference, filterSignificantDifferences } from './style-diff';
 
 import { GoogleAIFileManager } from '@google/generative-ai/server';
 
@@ -131,6 +131,13 @@ export const generateMultiDeviceFixPrompt = async (
         console.warn('GOOGLE_API_KEY not set, skipping AI prompt generation.');
         const lines: string[] = [];
         if (focus) lines.push(focus);
+        lines.push('You are an expert frontend developer performing MINIMAL, SURGICAL fixes.');
+        lines.push('CRITICAL RULES:');
+        lines.push('- Do NOT rewrite components; only change specific properties');
+        lines.push('- Preserve all working elements/styles that already match the base');
+        lines.push('- Make the smallest possible change to fix each issue');
+        lines.push('- Do NOT change overall structure; do NOT add/remove/reorder elements');
+        lines.push('- Prefer targeted CSS tweaks over large refactors');
         if (options?.targetDevice) lines.push(`Device: ${options.targetDevice}`);
         if (options?.targetSection) lines.push(`Section: ${options.targetSection}`);
         lines.push('Address issues visible in the provided images.');
@@ -159,6 +166,14 @@ export const generateMultiDeviceFixPrompt = async (
                 header.push(JSON.stringify(options.structureOrder));
                 header.push('Only change styling, spacing, images, and text inside the existing section containers.');
             }
+            header.push('\nYou are an expert frontend developer performing MINIMAL, SURGICAL fixes.');
+            header.push('CRITICAL RULES:');
+            header.push('- Do NOT rewrite components; only change specific properties');
+            header.push('- Preserve all working elements/styles that already match the base');
+            header.push('- Make the smallest possible change to fix each issue');
+            header.push('- Do NOT change structure; do NOT add/remove/reorder elements');
+            header.push('- Prefer targeted CSS tweaks over large refactors');
+            header.push('- Identify and address the TOP 3 most impactful visual issues first.');
             requestParts.push(header.join('\n'));
         }
         requestParts.push(`You are an expert frontend developer and UI/UX engineer.
@@ -169,19 +184,25 @@ For each device, I provide:
 3. Diff heatmap
 4. JSON style differences
 
-Your task is to analyze these and produce a single, consolidated set of instructions to fix the code.
+Your task is to analyze these and produce a single, consolidated set of MINIMAL, SURGICAL changes.
 Focus on:
-- Aligning the Target to the Base pixel-perfectly.
+- Aligning the Target to the Base without breaking already-correct parts.
 - Fixing layout shifts.
 - Correcting styles (colors, spacing, typography) based on the JSON diffs.
 - Ensuring responsiveness (desktop vs mobile).
 
-Deliver a single Markdown document. Do not include explanations, just the plan.
-Group by section if possible.
-List concrete CSS/HTML fixes.
+Constraints:
+- Do NOT rewrite components; change only specific properties.
+- Preserve anything that already matches the base.
+- Do NOT change structure or reorder elements.
+- Prioritize the TOP 3 most impactful issues first.
+
+Deliver a single Markdown plan. No explanations.
+Group by section when possible and list concrete CSS/HTML property edits only.
 `);
 
         for (const art of artifacts) {
+            const filtered = filterSignificantDifferences(art.differences || [], 10);
             const [baseUpload, targetUpload, diffUpload] = await Promise.all([
                 fileManager.uploadFile(art.basePath, { mimeType: 'image/png', displayName: `${art.device} Base` }),
                 fileManager.uploadFile(art.targetPath, { mimeType: 'image/png', displayName: `${art.device} Target` }),
@@ -198,7 +219,7 @@ List concrete CSS/HTML fixes.
             requestParts.push({
                 fileData: { mimeType: diffUpload.file.mimeType, fileUri: diffUpload.file.uri },
             });
-            requestParts.push(`\nStyle Differences for ${art.device}:\n${JSON.stringify(art.differences, null, 2)}\n`);
+            requestParts.push(`\nStyle Differences (filtered) for ${art.device}:\n${JSON.stringify(filtered, null, 2)}\n`);
         }
 
         if (options?.sectionSpecs && options.sectionSpecs.length) {
@@ -255,6 +276,10 @@ export const generateSectionFixPrompt = async (params: {
         'Do not change other sections.',
         'Use the provided base/target/diff images for this section only.',
         'Ensure the outer element has data-section set to the section name.',
+        'MINIMAL, SURGICAL changes only. Preserve anything already matching the base.',
+        'Do NOT change structure; do NOT add/remove/reorder elements.',
+        'Prefer targeted CSS property edits over component rewrites.',
+        'Address the TOP 3 most impactful issues first.',
     ];
     if (params.structureOrder && params.structureOrder.length) {
         header.push('STRUCTURE LOCK: Do NOT add, remove, or reorder sections. Maintain this exact order:');

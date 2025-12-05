@@ -148,8 +148,8 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
             chatHistory.splice(0, chatHistory.length - MAX_TURNS);
         }
     };
-    const createModel = process.env.GENERATOR_CREATE_MODEL || 'gemini-3-pro-preview';
-    const updateModel = process.env.GENERATOR_UPDATE_MODEL || 'gemini-2.5-flash';
+    const createModel = process.env.GENERATOR_CREATE_MODEL || 'gemini-2.5-pro';
+    const updateModel = process.env.GENERATOR_UPDATE_MODEL || createModel;
     const GEN_RETRIES = Number(process.env.GENERATOR_RETRIES || 3);
     const GEN_RETRY_BASE_MS = Number(process.env.GENERATOR_RETRY_BASE_MS || 1000);
     const createRes = await withRetry(() => fetch(`${GENERATOR_API_URL}/api/generate-from-image`, {
@@ -227,6 +227,25 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
         };
         await walk(dir);
         return acc;
+    };
+
+    const measureChangeSize = (oldBundle: ReactBundle | undefined, newBundle: ReactBundle): number => {
+        if (!oldBundle) return 0;
+        const norm = (p: string) => p.replace(/\\/g, '/');
+        const oldMap = new Map(oldBundle.files.map(f => [norm(f.path), f.content] as const));
+        let total = 0;
+        for (const nf of newBundle.files) {
+            const key = norm(nf.path);
+            const of = oldMap.get(key);
+            if (typeof of === 'string') {
+                const oLines = of.split('\n').length;
+                const nLines = nf.content.split('\n').length;
+                total += Math.abs(nLines - oLines);
+            } else {
+                total += nf.content.split('\n').length;
+            }
+        }
+        return total;
     };
 
     // Helper: build a URL -> local path map for captured images
@@ -619,7 +638,18 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                 throw new Error(`Update (compile) failed: ${updateRes.status} ${updateRes.statusText}${detail ? ` - ${detail.slice(0, 500)}` : ''}`);
             }
             const updateData = await updateRes.json();
-            currentBundle = updateData.bundle;
+            const candidateBundle: ReactBundle = updateData.bundle;
+            const maxChange = Number(process.env.MAX_UPDATE_CHANGE_LINES || 80);
+            if (currentBundle) {
+                const changeSize = measureChangeSize(currentBundle, candidateBundle);
+                if (changeSize > maxChange) {
+                    console.warn(`[PixelGen] Preflight update too large (${changeSize} lines). Skipping this update to preserve stability.`);
+                } else {
+                    currentBundle = candidateBundle;
+                }
+            } else {
+                currentBundle = candidateBundle;
+            }
             if (useChat) { try { chatHistory.push({ role: 'user', content: instructions }); capHistory(); } catch { } }
             const r2 = await writeReactBundle(iterDir, currentBundle!);
             localUrl = r2.localUrl; entryPath = r2.entryPath;
@@ -820,7 +850,18 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                 throw new Error(`Update (preflight) failed: ${updateRes.status} ${updateRes.statusText}${detail ? ` - ${detail.slice(0, 500)}` : ''}`);
             }
             const updateData = await updateRes.json();
-            currentBundle = updateData.bundle;
+            const candidateBundle: ReactBundle = updateData.bundle;
+            const maxChange = Number(process.env.MAX_UPDATE_CHANGE_LINES || 80);
+            if (currentBundle) {
+                const changeSize = measureChangeSize(currentBundle, candidateBundle);
+                if (changeSize > maxChange) {
+                    console.warn(`[PixelGen] Global update too large (${changeSize} lines). Skipping to avoid regression.`);
+                } else {
+                    currentBundle = candidateBundle;
+                }
+            } else {
+                currentBundle = candidateBundle;
+            }
             if (useChat) { try { chatHistory.push({ role: 'user', content: instructions }); capHistory(); } catch { } }
             let rewritten;
             try {
@@ -1100,7 +1141,18 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
                     throw new Error(`Update failed: ${updateRes.status} ${updateRes.statusText}${detail ? ` - ${detail.slice(0, 500)}` : ''}`);
                 }
                 const updateData = await updateRes.json();
-                currentBundle = updateData.bundle;
+                const candidateBundle: ReactBundle = updateData.bundle;
+                const maxChange = Number(process.env.MAX_UPDATE_CHANGE_LINES || 80);
+                if (currentBundle) {
+                    const changeSize = measureChangeSize(currentBundle, candidateBundle);
+                    if (changeSize > maxChange) {
+                        console.warn(`[PixelGen] Section update too large (${changeSize} lines). Skipping to avoid regression.`);
+                    } else {
+                        currentBundle = candidateBundle;
+                    }
+                } else {
+                    currentBundle = candidateBundle;
+                }
                 if (useChat) { try { chatHistory.push({ role: 'user', content: instructions }); capHistory(); } catch { } }
             }
         }
@@ -1145,7 +1197,18 @@ export const runPixelGen = async (options: PixelGenOptions): Promise<RunSummary>
             }
 
             const updateData = await updateRes.json();
-            currentBundle = updateData.bundle;
+            const candidateBundle: ReactBundle = updateData.bundle;
+            const maxChange = Number(process.env.MAX_UPDATE_CHANGE_LINES || 80);
+            if (currentBundle) {
+                const changeSize = measureChangeSize(currentBundle, candidateBundle);
+                if (changeSize > maxChange) {
+                    console.warn(`[PixelGen] Global update too large (${changeSize} lines). Skipping to avoid regression.`);
+                } else {
+                    currentBundle = candidateBundle;
+                }
+            } else {
+                currentBundle = candidateBundle;
+            }
             if (useChat) { try { chatHistory.push({ role: 'user', content: instructions }); capHistory(); } catch { } }
             decision = 'global-update';
         }
