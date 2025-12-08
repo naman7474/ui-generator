@@ -93,6 +93,7 @@ export const validateChanges = async (
             if (!wasIntentional) {
                 result.regressions.push({
                     change: {
+                        selector: '',
                         stableSelector: '',
                         cssSelector: reg.selector,
                         property: reg.property,
@@ -100,7 +101,7 @@ export const validateChanges = async (
                         actual: reg.actual,
                         tag: '',
                         rect: { x: 0, y: 0, width: 0, height: 0 },
-                        priority: 0,
+                        importance: 0,
                         category: 'effects'
                     },
                     before: reg.expected,

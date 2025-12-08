@@ -1,9 +1,13 @@
 // src/ground-truth/extractor.ts
+//
+// FIXED VERSION - Position-based extraction
 // 
-// DROP-IN REPLACEMENT - TypeScript-compliant version
+// This extracts elements with their visual positions so they can be
+// matched across different sites (base vs generated) even when the
+// HTML structure differs.
 //
 
-import { chromium } from 'playwright';
+import { chromium, Page } from 'playwright';
 import { ElementStyle, GroundTruth } from './types';
 
 const VIEWPORTS = {
@@ -11,30 +15,45 @@ const VIEWPORTS = {
     mobile: { width: 390, height: 844 }
 };
 
+// Properties to extract
 const STYLE_PROPERTIES = [
-    // Layout
-    'display', 'position', 'top', 'right', 'bottom', 'left', 'z-index',
-    'width', 'height', 'min-width', 'max-width', 'min-height', 'max-height',
-    'flex-direction', 'flex-wrap', 'justify-content', 'align-items', 'gap',
-    'grid-template-columns', 'grid-template-rows',
+    // Colors (high impact)
+    'color', 'background-color', 'background', 'border-color',
 
-    // Spacing
-    'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
-    'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
-
-    // Typography
+    // Typography (high impact)
     'font-family', 'font-size', 'font-weight', 'line-height',
     'letter-spacing', 'text-align', 'text-transform', 'text-decoration',
 
-    // Colors
-    'color', 'background-color', 'border-color',
+    // Spacing (medium impact)
+    'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+    'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+    'gap',
 
-    // Borders
+    // Borders (medium impact)
     'border-width', 'border-style', 'border-radius',
 
+    // Layout (low priority - dangerous to change)
+    'display', 'flex-direction', 'justify-content', 'align-items',
+
     // Effects
-    'opacity', 'box-shadow', 'transform'
+    'opacity', 'box-shadow'
 ];
+
+// Elements to skip
+const SKIP_TAGS = new Set([
+    'SCRIPT', 'STYLE', 'NOSCRIPT', 'META', 'LINK', 'HEAD', 'TITLE',
+    'PATH', 'CIRCLE', 'RECT', 'LINE', 'G', 'DEFS', 'USE', 'CLIPPATH',
+    'LINEARGRADIENT', 'RADIALGRADIENT', 'STOP', 'MASK', 'PATTERN',
+    'BR', 'HR', 'WBR', 'SVG'
+]);
+
+// Important tags for matching
+const IMPORTANT_TAGS = new Set([
+    'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+    'P', 'SPAN', 'A', 'BUTTON',
+    'IMG', 'DIV', 'SECTION', 'HEADER', 'FOOTER', 'NAV',
+    'UL', 'OL', 'LI'
+]);
 
 export const extractGroundTruth = async (
     url: string,
@@ -47,65 +66,89 @@ export const extractGroundTruth = async (
 
     try {
         await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-        await page.waitForTimeout(1500); // Let animations settle
+        await page.waitForTimeout(1500);
     } catch (e) {
         console.warn(`[Extractor] Navigation warning: ${e}`);
     }
 
-    const elements = await page.evaluate((styleProps: string[]) => {
+    const elements = await page.evaluate((args: { styleProps: string[], skipTags: string[], importantTags: string[] }) => {
+        const { styleProps, skipTags, importantTags } = args;
+        const skipTagsSet = new Set(skipTags);
+        const importantTagsSet = new Set(importantTags);
+
         const results: Array<{
-            stableSelector: string;
+            selector: string;
             cssSelector: string;
             tag: string;
             section?: string;
+            sectionIndex?: number;
             rect: { x: number; y: number; width: number; height: number };
             styles: Record<string, string>;
+            importance: number;
+            textContent?: string;
         }> = [];
-        const processedSelectors = new Set<string>();
+
+        let elementIndex = 0;
 
         /**
-         * Generate a STRUCTURAL selector that works across different sites.
+         * Generate a unique selector based on position and structure
+         * This doesn't rely on data-section existing
          */
-        const generateStructuralSelector = (el: Element): string => {
-            // Priority 1: data-section is our best anchor
-            const dataSection = el.getAttribute('data-section');
-            if (dataSection) {
-                return `[data-section="${dataSection}"]`;
-            }
+        const generateSelector = (el: Element, idx: number): string => {
+            const tag = el.tagName.toLowerCase();
+            const rect = el.getBoundingClientRect();
 
-            // Priority 2: Stable IDs (not random/dynamic ones)
-            if (el.id) {
-                const isStableId = el.id.length < 20 &&
-                    !el.id.match(/^[a-f0-9]{8,}$/i) &&
-                    !el.id.includes(':') &&
-                    !el.id.match(/^_/);
-                if (isStableId) {
-                    return `#${el.id}`;
+            // Create position-based ID for matching
+            const yBucket = Math.floor(rect.y / 50) * 50;  // 50px buckets
+            const xBucket = Math.floor(rect.x / 50) * 50;
+
+            return `${tag}@y${yBucket}x${xBucket}#${idx}`;
+        };
+
+        /**
+         * Generate CSS selector for applying styles
+         * Prefers data-section if available, falls back to structural
+         */
+        const generateCSSSelector = (el: Element): string => {
+            // Check for data-section (generated site will have this)
+            const sectionEl = el.closest('[data-section]');
+            if (sectionEl) {
+                const sectionName = sectionEl.getAttribute('data-section');
+                const pathFromSection = getPathFromAncestor(el, sectionEl);
+                if (pathFromSection) {
+                    return `[data-section="${sectionName}"] ${pathFromSection}`;
                 }
+                return `[data-section="${sectionName}"]`;
             }
 
-            // Priority 3: Build structural path from body
+            // Check for ID
+            if (el.id && el.id.length < 30 && !el.id.match(/^[a-f0-9]{8,}$/i)) {
+                return `#${el.id}`;
+            }
+
+            // Fall back to structural selector
+            return getPathFromBody(el);
+        };
+
+        const getPathFromAncestor = (el: Element, ancestor: Element): string => {
+            if (el === ancestor) return '';
+
             const parts: string[] = [];
             let current: Element | null = el;
             let depth = 0;
-            const MAX_DEPTH = 6;
 
-            while (current && current.tagName !== 'BODY' && current.tagName !== 'HTML' && depth < MAX_DEPTH) {
+            while (current && current !== ancestor && depth < 6) {
                 const parentEl: Element | null = current.parentElement;
                 if (!parentEl) break;
 
                 const tag = current.tagName.toLowerCase();
-
-                // Skip SVG internals - they're too granular
-                if (['svg', 'path', 'circle', 'rect', 'line', 'g', 'defs', 'use'].includes(tag)) {
+                if (['svg', 'path', 'g'].includes(tag)) {
                     current = parentEl;
                     continue;
                 }
 
-                // Count position among same-tag siblings
-                const currentTag = current.tagName;
-                const siblings = Array.from(parentEl.children).filter((c: Element) =>
-                    c.tagName === currentTag
+                const siblings = Array.from(parentEl.children).filter(
+                    (c: Element) => c.tagName === current!.tagName
                 );
                 const index = siblings.indexOf(current) + 1;
 
@@ -119,146 +162,123 @@ export const extractGroundTruth = async (
                 depth++;
             }
 
-            if (parts.length === 0) {
-                return 'body';
-            }
-
-            return `body > ${parts.join(' > ')}`;
+            return parts.join(' > ');
         };
 
-        /**
-         * Generate a CSS selector suitable for applying overrides.
-         */
-        const generateCSSSelector = (el: Element): string => {
-            // Priority 1: ID
-            if (el.id && !el.id.match(/^[a-f0-9]{8,}$/i)) {
-                return `#${el.id}`;
-            }
-
-            // Priority 2: data-section scoped
-            const section = el.closest('[data-section]');
-            if (section) {
-                const sectionName = section.getAttribute('data-section');
-                const tag = el.tagName.toLowerCase();
-                const parentEl: Element | null = el.parentElement;
-                if (parentEl) {
-                    const elTag = el.tagName;
-                    const siblings = Array.from(parentEl.children).filter((c: Element) => c.tagName === elTag);
-                    const nth = siblings.indexOf(el) + 1;
-                    if (siblings.length > 1) {
-                        return `[data-section="${sectionName}"] ${tag}:nth-of-type(${nth})`;
-                    }
-                    return `[data-section="${sectionName}"] ${tag}`;
-                }
-            }
-
-            // Priority 3: Semantic class names (filter out Tailwind utilities)
-            if (el.className && typeof el.className === 'string') {
-                const classes = el.className.split(/\s+/).filter((c: string) => {
-                    if (!c || c.length < 3) return false;
-                    // Skip Tailwind-like utility classes
-                    if (c.match(/^(bg|text|p|m|w|h|flex|grid|border|rounded|shadow|font|leading)-/)) return false;
-                    // Skip arbitrary value classes
-                    if (c.includes('[') || c.includes(':')) return false;
-                    // Skip hash-like classes (CSS modules)
-                    if (c.match(/^[a-z]{1,3}[A-Z0-9]/)) return false;
-                    if (c.match(/^_/)) return false;
-                    return true;
-                });
-
-                if (classes.length > 0) {
-                    const tag = el.tagName.toLowerCase();
-                    return `${tag}.${classes.slice(0, 2).join('.')}`;
-                }
-            }
-
-            // Priority 4: Structural path (fallback)
+        const getPathFromBody = (el: Element): string => {
             const parts: string[] = [];
             let current: Element | null = el;
             let depth = 0;
 
-            while (current && current.tagName !== 'BODY' && depth < 4) {
+            while (current && current.tagName !== 'BODY' && current.tagName !== 'HTML' && depth < 6) {
                 const parentEl: Element | null = current.parentElement;
                 if (!parentEl) break;
 
                 const tag = current.tagName.toLowerCase();
-                const siblings = Array.from(parentEl.children);
+                if (['svg', 'path', 'g'].includes(tag)) {
+                    current = parentEl;
+                    continue;
+                }
+
+                const siblings = Array.from(parentEl.children).filter(
+                    (c: Element) => c.tagName === current!.tagName
+                );
                 const index = siblings.indexOf(current) + 1;
 
-                parts.unshift(`${tag}:nth-child(${index})`);
+                if (siblings.length > 1) {
+                    parts.unshift(`${tag}:nth-of-type(${index})`);
+                } else {
+                    parts.unshift(tag);
+                }
+
                 current = parentEl;
                 depth++;
             }
 
-            return parts.join(' > ');
+            return parts.length > 0 ? `body > ${parts.join(' > ')}` : 'body';
+        };
+
+        const calculateImportance = (el: Element, rect: DOMRect): number => {
+            let score = 0;
+
+            // Above the fold
+            if (rect.top < window.innerHeight) score += 50;
+            if (rect.top < 500) score += 30;  // Very top of page
+
+            // Important tags
+            if (importantTagsSet.has(el.tagName)) score += 20;
+
+            // Headings
+            if (/^H[1-6]$/.test(el.tagName)) {
+                score += 40 - parseInt(el.tagName[1]) * 5;
+            }
+
+            // Size (larger = more important)
+            const area = rect.width * rect.height;
+            if (area > 100000) score += 20;
+            else if (area > 10000) score += 10;
+
+            // Buttons and links
+            if (el.tagName === 'BUTTON' || el.tagName === 'A') score += 15;
+
+            return score;
+        };
+
+        const getSectionInfo = (el: Element): { section?: string; sectionIndex?: number } => {
+            const sectionEl = el.closest('[data-section]');
+            if (!sectionEl) return {};
+
+            const section = sectionEl.getAttribute('data-section') || undefined;
+            const allSections = document.querySelectorAll('[data-section]');
+            const sectionIndex = Array.from(allSections).indexOf(sectionEl);
+
+            return { section, sectionIndex: sectionIndex >= 0 ? sectionIndex : undefined };
         };
 
         const processElement = (el: Element): void => {
-            // Skip non-visual elements
-            if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'META', 'LINK', 'HEAD', 'TITLE'].includes(el.tagName)) {
-                return;
-            }
-
-            // Skip SVG internals (too granular)
-            if (['PATH', 'CIRCLE', 'RECT', 'LINE', 'G', 'DEFS', 'USE', 'CLIPPATH', 'LINEARGRADIENT'].includes(el.tagName)) {
-                return;
-            }
+            if (skipTagsSet.has(el.tagName)) return;
 
             const style = window.getComputedStyle(el);
-
-            // Skip invisible elements
-            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-                return;
-            }
+            if (style.display === 'none' || style.visibility === 'hidden') return;
+            if (parseFloat(style.opacity) === 0) return;
 
             const rect = el.getBoundingClientRect();
-
-            // Skip elements with no dimensions (unless they're containers)
-            if (rect.width === 0 && rect.height === 0 && el.children.length === 0) {
-                return;
-            }
-
-            // Skip off-screen elements (likely hidden)
-            if (rect.bottom < 0 || rect.top > window.innerHeight * 3) {
-                return;
-            }
+            if (rect.width === 0 && rect.height === 0) return;
+            if (rect.bottom < -100) return;
 
             // Generate selectors
-            const stableSelector = generateStructuralSelector(el);
-
-            // Skip duplicates
-            if (processedSelectors.has(stableSelector)) {
-                return;
-            }
-            processedSelectors.add(stableSelector);
-
+            const selector = generateSelector(el, elementIndex++);
             const cssSelector = generateCSSSelector(el);
 
-            // Extract computed styles
+            // Extract styles
             const styles: Record<string, string> = {};
             for (const prop of styleProps) {
                 const value = style.getPropertyValue(prop);
-                if (value) {
+                if (value && value !== 'none' && value !== 'auto' && value !== 'normal') {
                     styles[prop] = value;
                 }
             }
 
-            // Get section context
-            const sectionEl = el.closest('[data-section]');
-            const sectionName = sectionEl?.getAttribute('data-section') || undefined;
+            const { section, sectionIndex } = getSectionInfo(el);
+
+            // Get text content for matching (truncated)
+            const text = el.textContent?.trim().slice(0, 50) || undefined;
 
             results.push({
-                stableSelector,
+                selector,
                 cssSelector,
                 tag: el.tagName.toLowerCase(),
-                section: sectionName,
+                section,
+                sectionIndex,
                 rect: {
                     x: Math.round(rect.x),
-                    y: Math.round(rect.y),
+                    y: Math.round(rect.y + window.scrollY),
                     width: Math.round(rect.width),
                     height: Math.round(rect.height)
                 },
-                styles
+                styles,
+                importance: calculateImportance(el, rect),
+                textContent: text
             });
 
             // Process children
@@ -268,24 +288,36 @@ export const extractGroundTruth = async (
         };
 
         processElement(document.body);
+
+        // Sort by importance
+        results.sort((a, b) => b.importance - a.importance);
+
         return results;
-    }, STYLE_PROPERTIES);
+    }, {
+        styleProps: STYLE_PROPERTIES,
+        skipTags: Array.from(SKIP_TAGS),
+        importantTags: Array.from(IMPORTANT_TAGS)
+    });
 
     await browser.close();
 
-    // Build element map
+    // Build element map using position-based selector as key
     const elementMap = new Map<string, ElementStyle>();
-    let duplicates = 0;
 
     for (const el of elements) {
-        if (elementMap.has(el.stableSelector)) {
-            duplicates++;
-            continue;
-        }
-        elementMap.set(el.stableSelector, el as ElementStyle);
+        elementMap.set(el.selector, {
+            stableSelector: el.selector,
+            cssSelector: el.cssSelector,
+            tag: el.tag,
+            section: el.section,
+            sectionIndex: el.sectionIndex,
+            rect: el.rect,
+            styles: el.styles,
+            importance: el.importance
+        } as ElementStyle);
     }
 
-    console.log(`[Extractor] Extracted ${elementMap.size} unique elements from ${url} (${duplicates} duplicates skipped)`);
+    console.log(`[Extractor] Extracted ${elementMap.size} elements`);
 
     return {
         url,
@@ -296,30 +328,64 @@ export const extractGroundTruth = async (
     };
 };
 
+// Alias
 export const extractCurrentState = extractGroundTruth;
 
 /**
- * Helper to serialize GroundTruth for JSON storage
+ * Legacy fuzzy matcher - now handled by differ's matchElementsByPosition
  */
-export const serializeGroundTruth = (gt: GroundTruth): object => {
-    return {
-        ...gt,
-        elements: Array.from(gt.elements.entries())
-    };
+export const fuzzyMatchElements = (
+    baseElements: Map<string, ElementStyle>,
+    currentElements: Map<string, ElementStyle>
+): Map<string, string> => {
+    // Import the position-based matcher from differ
+    const matches = new Map<string, string>();
+    const usedCurrent = new Set<string>();
+
+    const baseArray = Array.from(baseElements.entries());
+    const currentArray = Array.from(currentElements.entries());
+
+    for (const [baseKey, baseEl] of baseArray) {
+        let bestMatch: { key: string; score: number } | null = null;
+
+        for (const [currentKey, currentEl] of currentArray) {
+            if (usedCurrent.has(currentKey)) continue;
+            if (currentEl.tag !== baseEl.tag) continue;
+
+            // Position matching
+            const yDiff = Math.abs(currentEl.rect.y - baseEl.rect.y);
+            const xDiff = Math.abs(currentEl.rect.x - baseEl.rect.x);
+
+            if (yDiff > 200 || xDiff > 100) continue;
+
+            const widthRatio = Math.min(baseEl.rect.width, currentEl.rect.width) /
+                Math.max(baseEl.rect.width, currentEl.rect.width) || 0;
+
+            if (widthRatio < 0.5) continue;
+
+            const score = 100 - yDiff * 0.3 - xDiff * 0.2 + widthRatio * 20;
+
+            if (!bestMatch || score > bestMatch.score) {
+                bestMatch = { key: currentKey, score };
+            }
+        }
+
+        if (bestMatch && bestMatch.score > 50) {
+            matches.set(baseKey, bestMatch.key);
+            usedCurrent.add(bestMatch.key);
+        }
+    }
+
+    console.log(`[Extractor] Fuzzy matched ${matches.size}/${baseElements.size} elements`);
+    return matches;
 };
 
-/**
- * Helper to deserialize GroundTruth from JSON
- */
-export const deserializeGroundTruth = (data: {
-    url: string;
-    device: 'desktop' | 'mobile';
-    viewport: { width: number; height: number };
-    extractedAt: string;
-    elements: Array<[string, ElementStyle]>
-}): GroundTruth => {
-    return {
-        ...data,
-        elements: new Map(data.elements)
-    };
-};
+export const serializeGroundTruth = (gt: GroundTruth): object => ({
+    ...gt,
+    elements: Array.from(gt.elements.entries())
+});
+
+export const deserializeGroundTruth = (data: any): GroundTruth => ({
+    ...data,
+    elements: new Map(data.elements)
+});

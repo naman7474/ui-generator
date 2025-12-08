@@ -80,29 +80,32 @@ const calculatePriority = (change: StyleChange): number => {
     const catWeight = CATEGORY_WEIGHT[change.category] || 50;
     score += catWeight * 0.5;
 
-    // Element size (larger elements are more visually important)
-    const area = change.rect.width * change.rect.height;
-    const areaScore = Math.min(100, Math.sqrt(area) / 10);
-    score += areaScore;
+    // Element size and position scoring (only if rect is available)
+    if (change.rect) {
+        // Element size (larger elements are more visually important)
+        const area = (change.rect?.width ?? 0) * (change.rect?.height ?? 0);
+        const areaScore = Math.min(100, Math.sqrt(area) / 10);
+        score += areaScore;
 
-    // Above-the-fold bonus (y < 900px)
-    if (change.rect.y < 900) {
-        score += 50;
-    }
+        // Above-the-fold bonus (y < 900px)
+        if ((change.rect?.y ?? Infinity) < 900) {
+            score += 50;
+        }
 
-    // Very top of page bonus
-    if (change.rect.y < 200) {
-        score += 30;
-    }
+        // Very top of page bonus
+        if ((change.rect?.y ?? Infinity) < 200) {
+            score += 30;
+        }
 
-    // Penalize very small elements
-    if (area < 100) {
-        score -= 30;
-    }
+        // Penalize very small elements
+        if (area < 100) {
+            score -= 30;
+        }
 
-    // Penalize off-screen elements
-    if (change.rect.y > 2000) {
-        score -= 40;
+        // Penalize off-screen elements
+        if ((change.rect?.y ?? 0) > 2000) {
+            score -= 40;
+        }
     }
 
     return score;

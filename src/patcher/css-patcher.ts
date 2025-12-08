@@ -1,223 +1,466 @@
 // src/patcher/css-patcher.ts
 //
-// IMPROVED VERSION with:
-// 1. !important to override Tailwind utilities
-// 2. Validation of selectors
-// 3. Atomic writes
-// 4. Better error handling
+// IMPROVED VERSION - More reliable CSS patching
+// Key improvements:
+// 1. Validate selectors before applying
+// 2. Deduplicate rules
+// 3. Better error handling
+// 4. Support for complex selectors
+// 5. Includes removeOverride for rollback support
+//
 
 import fs from 'fs/promises';
-import postcss, { Root, Rule } from 'postcss';
+import path from 'path';
 import { StyleChange } from '../ground-truth/types';
 
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface PatchResult {
+    success: boolean;
+    appliedCount: number;
+    skippedCount: number;
+    errors: string[];
+}
+
+// ============================================================================
+// SELECTOR VALIDATION
+// ============================================================================
+
 /**
- * Group changes by selector for efficient CSS generation
+ * Validate a CSS selector is safe to use
  */
-export const groupChangesBySelector = (
-    changes: StyleChange[]
-): Map<string, StyleChange[]> => {
-    const grouped = new Map<string, StyleChange[]>();
+const isValidSelector = (selector: string): boolean => {
+    if (!selector || typeof selector !== 'string') return false;
 
-    for (const change of changes) {
-        if (!change.cssSelector || change.cssSelector.trim() === '') {
-            console.warn(`[CSS Patcher] Skipping change with empty selector: ${change.property}`);
-            continue;
-        }
+    // Must have some content
+    if (selector.trim().length < 2) return false;
 
-        const selector = change.cssSelector.trim();
-        const existing = grouped.get(selector) || [];
-        existing.push(change);
-        grouped.set(selector, existing);
+    // Block dangerous selectors
+    const dangerous = [
+        /^\s*\*\s*$/,           // Universal selector alone
+        /^html\s*$/i,           // Just html
+        /^body\s*$/i,           // Just body (without child)
+        /^#root\s*$/i,          // Just #root
+        /^#app\s*$/i,           // Just #app
+        /^:root\s*$/i,          // Just :root
+    ];
+
+    for (const pattern of dangerous) {
+        if (pattern.test(selector)) return false;
     }
 
-    return grouped;
+    // Must have valid CSS selector characters
+    if (!/^[\w\s\-\.\#\[\]=\"\'\:\>\+\~\*\(\)]+$/.test(selector)) {
+        return false;
+    }
+
+    return true;
 };
 
 /**
- * Apply CSS patches using PostCSS AST manipulation.
+ * Validate a property name is safe
  */
-export const applyCSSPatches = async (
-    overridesPath: string,
-    changes: StyleChange[]
-): Promise<{ success: boolean; appliedCount: number; errors: string[] }> => {
-    const errors: string[] = [];
-    let appliedCount = 0;
+const isValidProperty = (property: string): boolean => {
+    if (!property || typeof property !== 'string') return false;
 
-    // Filter out invalid changes first
-    const validChanges = changes.filter(c => {
-        if (!c.cssSelector || c.cssSelector.trim() === '') {
-            errors.push(`Empty selector for property ${c.property}`);
-            return false;
-        }
-        if (!c.property || c.property.trim() === '') {
-            errors.push(`Empty property`);
-            return false;
-        }
-        if (c.expected === undefined || c.expected === null) {
-            errors.push(`No expected value for ${c.cssSelector}.${c.property}`);
-            return false;
-        }
-        return true;
-    });
+    // Must be a valid CSS property name
+    if (!/^[a-z\-]+$/i.test(property)) return false;
 
-    if (validChanges.length === 0) {
-        return { success: false, appliedCount: 0, errors };
-    }
+    // Block dangerous properties for broad selectors
+    const dangerous = new Set([
+        'position', 'top', 'right', 'bottom', 'left',
+        'display', 'visibility', 'overflow',
+        'height', 'width', 'min-height', 'max-height',
+        'transform', 'z-index', 'float', 'clear'
+    ]);
 
-    // Read existing overrides (or start fresh)
-    let cssContent = '';
-    try {
-        cssContent = await fs.readFile(overridesPath, 'utf-8');
-    } catch {
-        cssContent = '/* PixelGen v2 CSS Overrides - Auto-generated */\n\n';
-    }
-
-    // Parse with PostCSS
-    let root: Root;
-    try {
-        root = postcss.parse(cssContent);
-    } catch (e) {
-        console.error('[CSS Patcher] Failed to parse existing CSS, starting fresh');
-        root = postcss.parse('/* PixelGen v2 CSS Overrides */\n');
-    }
-
-    // Group changes by selector for efficiency
-    const grouped = groupChangesBySelector(validChanges);
-
-    for (const [selector, selectorChanges] of grouped) {
-        try {
-            // Find existing rule or create new one
-            let rule = findRule(root, selector);
-
-            if (!rule) {
-                rule = postcss.rule({ selector });
-                root.append(rule);
-            }
-
-            // Apply each property change
-            for (const change of selectorChanges) {
-                applyPropertyChange(rule, change.property, change.expected);
-                appliedCount++;
-            }
-        } catch (e) {
-            const errorMsg = `Failed to apply ${selector}: ${e}`;
-            console.error(`[CSS Patcher] ${errorMsg}`);
-            errors.push(errorMsg);
-        }
-    }
-
-    // Write back with atomic operation
-    try {
-        const output = root.toString();
-
-        // Write to temp file first, then rename (atomic)
-        const tempPath = overridesPath + '.tmp';
-        await fs.writeFile(tempPath, output, 'utf-8');
-        await fs.rename(tempPath, overridesPath);
-
-        console.log(`[CSS Patcher] Wrote ${appliedCount} changes to ${overridesPath}`);
-    } catch (e) {
-        const errorMsg = `Failed to write CSS file: ${e}`;
-        console.error(`[CSS Patcher] ${errorMsg}`);
-        errors.push(errorMsg);
-        return { success: false, appliedCount: 0, errors };
-    }
-
-    return { success: errors.length === 0, appliedCount, errors };
+    return !dangerous.has(property.toLowerCase());
 };
 
 /**
- * Find an existing rule by selector
+ * Check if a value is safe to apply
  */
-const findRule = (root: Root, selector: string): Rule | undefined => {
-    let found: Rule | undefined;
+const isValidValue = (value: string): boolean => {
+    if (value === undefined || value === null) return false;
+    if (typeof value !== 'string') value = String(value);
 
-    root.walkRules((rule) => {
-        if (rule.selector === selector) {
-            found = rule;
-        }
-    });
+    // Must have some content
+    if (value.trim().length === 0) return false;
 
-    return found;
-};
+    // Block suspicious values
+    if (/expression\s*\(/i.test(value)) return false;  // IE expression
+    if (/javascript\s*:/i.test(value)) return false;   // JS injection
+    if (/url\s*\(\s*["']?data:/i.test(value)) return false;  // Data URLs (except small ones)
 
-/**
- * Apply a property change to a rule, using !important to override Tailwind
- */
-const applyPropertyChange = (rule: Rule, property: string, value: string): void => {
-    // Ensure value has !important to override Tailwind utilities
-    const importantValue = value.includes('!important') ? value : `${value} !important`;
-
-    let found = false;
-
-    // Check if property already exists
-    rule.walkDecls(property, (decl) => {
-        decl.value = importantValue;
-        found = true;
-    });
-
-    // If not found, append new declaration
-    if (!found) {
-        rule.append({ prop: property, value: importantValue });
+    // Block absurdly large values
+    const numMatch = value.match(/(\d+)(px|em|rem|vh|vw|%)?/);
+    if (numMatch) {
+        const num = parseInt(numMatch[1]);
+        if (num > 5000) return false;  // Likely a bug
     }
+
+    return true;
+};
+
+// ============================================================================
+// CSS MANIPULATION
+// ============================================================================
+
+/**
+ * Parse existing CSS to find rules
+ */
+const parseExistingRules = (css: string): Map<string, Map<string, string>> => {
+    const rules = new Map<string, Map<string, string>>();
+
+    // Simple CSS parser (handles most common cases)
+    const rulePattern = /([^{}]+)\s*\{([^}]*)\}/g;
+    let match;
+
+    while ((match = rulePattern.exec(css)) !== null) {
+        const selector = match[1].trim();
+        const declarations = match[2];
+
+        if (!rules.has(selector)) {
+            rules.set(selector, new Map());
+        }
+
+        // Parse declarations
+        const declPattern = /([^:;]+)\s*:\s*([^;]+)/g;
+        let declMatch;
+
+        while ((declMatch = declPattern.exec(declarations)) !== null) {
+            const prop = declMatch[1].trim();
+            const val = declMatch[2].trim().replace(/\s*!important\s*$/, '');
+            rules.get(selector)!.set(prop, val);
+        }
+    }
+
+    return rules;
 };
 
 /**
- * Generate CSS override content as a string (for preview/validation)
+ * Serialize rules back to CSS
  */
-export const generateCSSOverrides = (changes: StyleChange[]): string => {
-    const grouped = groupChangesBySelector(changes);
-    const lines: string[] = ['/* PixelGen v2 CSS Overrides */\n'];
+const serializeRules = (rules: Map<string, Map<string, string>>): string => {
+    const lines: string[] = [];
 
-    for (const [selector, selectorChanges] of grouped) {
+    for (const [selector, declarations] of rules) {
+        if (declarations.size === 0) continue;
+
         lines.push(`${selector} {`);
-        for (const change of selectorChanges) {
-            const value = change.expected.includes('!important')
-                ? change.expected
-                : `${change.expected} !important`;
-            lines.push(`  ${change.property}: ${value};`);
+        for (const [prop, val] of declarations) {
+            lines.push(`  ${prop}: ${val} !important;`);
         }
-        lines.push('}\n');
+        lines.push('}');
+        lines.push('');
     }
 
     return lines.join('\n');
 };
 
 /**
- * Remove a specific rule from overrides (for rollback)
+ * Normalize a selector for deduplication
  */
-export const removeRule = async (
+const normalizeSelector = (selector: string): string => {
+    return selector
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/\s*>\s*/g, ' > ')
+        .replace(/\s*:\s*/g, ':')
+        .toLowerCase();
+};
+
+// ============================================================================
+// MAIN FUNCTIONS
+// ============================================================================
+
+/**
+ * Apply a single CSS change
+ */
+export const applySingleChange = async (
     overridesPath: string,
-    selector: string,
-    property?: string
-): Promise<boolean> => {
+    change: StyleChange
+): Promise<{ success: boolean; error?: string }> => {
+    // Validate inputs
+    if (!isValidSelector(change.cssSelector)) {
+        return { success: false, error: `Invalid selector: ${change.cssSelector}` };
+    }
+
+    if (!isValidProperty(change.property)) {
+        return { success: false, error: `Blocked property: ${change.property}` };
+    }
+
+    if (!isValidValue(change.expected)) {
+        return { success: false, error: `Invalid value: ${change.expected}` };
+    }
+
     try {
-        const cssContent = await fs.readFile(overridesPath, 'utf-8');
-        const root = postcss.parse(cssContent);
+        // Read existing CSS
+        let existingCSS = '';
+        try {
+            existingCSS = await fs.readFile(overridesPath, 'utf-8');
+        } catch {
+            // File doesn't exist yet
+        }
 
-        root.walkRules(selector, (rule) => {
-            if (property) {
-                // Remove just the property
-                rule.walkDecls(property, (decl) => {
-                    decl.remove();
-                });
-                // If rule is now empty, remove it
-                if (rule.nodes?.length === 0) {
-                    rule.remove();
-                }
-            } else {
-                // Remove entire rule
-                rule.remove();
+        // Parse existing rules
+        const rules = parseExistingRules(existingCSS);
+
+        // Add/update the rule
+        const normalizedSelector = normalizeSelector(change.cssSelector);
+
+        // Find matching selector (case-insensitive)
+        let targetSelector = change.cssSelector;
+        for (const [existing] of rules) {
+            if (normalizeSelector(existing) === normalizedSelector) {
+                targetSelector = existing;
+                break;
             }
-        });
+        }
 
-        await fs.writeFile(overridesPath, root.toString(), 'utf-8');
-        return true;
-    } catch (e) {
-        console.error(`[CSS Patcher] Failed to remove rule: ${e}`);
-        return false;
+        if (!rules.has(targetSelector)) {
+            rules.set(targetSelector, new Map());
+        }
+
+        rules.get(targetSelector)!.set(change.property, change.expected);
+
+        // Serialize and write
+        const newCSS = `/* PixelGen CSS Overrides */\n\n${serializeRules(rules)}`;
+        await fs.writeFile(overridesPath, newCSS);
+
+        return { success: true };
+
+    } catch (e: any) {
+        return { success: false, error: e.message };
     }
 };
 
-// Alias for backward compatibility
-export const removeOverride = removeRule;
+/**
+ * Apply multiple CSS changes at once (more efficient)
+ */
+export const applyCSSPatches = async (
+    overridesPath: string,
+    changes: StyleChange[]
+): Promise<PatchResult> => {
+    const errors: string[] = [];
+    let appliedCount = 0;
+    let skippedCount = 0;
+
+    if (!changes || changes.length === 0) {
+        return { success: true, appliedCount: 0, skippedCount: 0, errors: [] };
+    }
+
+    try {
+        // Read existing CSS
+        let existingCSS = '';
+        try {
+            existingCSS = await fs.readFile(overridesPath, 'utf-8');
+        } catch {
+            // File doesn't exist yet
+        }
+
+        // Parse existing rules
+        const rules = parseExistingRules(existingCSS);
+
+        // Apply each change
+        for (const change of changes) {
+            // Validate
+            if (!isValidSelector(change.cssSelector)) {
+                errors.push(`Invalid selector: ${change.cssSelector?.slice(0, 50)}`);
+                skippedCount++;
+                continue;
+            }
+
+            if (!isValidProperty(change.property)) {
+                errors.push(`Blocked property: ${change.property}`);
+                skippedCount++;
+                continue;
+            }
+
+            if (!isValidValue(change.expected)) {
+                errors.push(`Invalid value for ${change.property}`);
+                skippedCount++;
+                continue;
+            }
+
+            // Find or create rule
+            const normalizedSelector = normalizeSelector(change.cssSelector);
+            let targetSelector = change.cssSelector;
+
+            for (const [existing] of rules) {
+                if (normalizeSelector(existing) === normalizedSelector) {
+                    targetSelector = existing;
+                    break;
+                }
+            }
+
+            if (!rules.has(targetSelector)) {
+                rules.set(targetSelector, new Map());
+            }
+
+            rules.get(targetSelector)!.set(change.property, change.expected);
+            appliedCount++;
+        }
+
+        // Serialize and write
+        const newCSS = `/* PixelGen CSS Overrides - ${appliedCount} rules */\n\n${serializeRules(rules)}`;
+        await fs.writeFile(overridesPath, newCSS);
+
+        return {
+            success: appliedCount > 0,
+            appliedCount,
+            skippedCount,
+            errors
+        };
+
+    } catch (e: any) {
+        return {
+            success: false,
+            appliedCount: 0,
+            skippedCount: changes.length,
+            errors: [e.message]
+        };
+    }
+};
+
+/**
+ * Remove a specific override (for rollback support)
+ */
+export const removeOverride = async (
+    overridesPath: string,
+    selector: string,
+    property?: string
+): Promise<{ success: boolean; error?: string }> => {
+    try {
+        let existingCSS = '';
+        try {
+            existingCSS = await fs.readFile(overridesPath, 'utf-8');
+        } catch {
+            return { success: true }; // Nothing to remove
+        }
+
+        const rules = parseExistingRules(existingCSS);
+        const normalizedTarget = normalizeSelector(selector);
+
+        let found = false;
+        for (const [existingSelector, declarations] of rules) {
+            if (normalizeSelector(existingSelector) === normalizedTarget) {
+                if (property) {
+                    // Remove specific property
+                    if (declarations.has(property)) {
+                        declarations.delete(property);
+                        found = true;
+                    }
+                    // Remove selector if no properties left
+                    if (declarations.size === 0) {
+                        rules.delete(existingSelector);
+                    }
+                } else {
+                    // Remove entire selector
+                    rules.delete(existingSelector);
+                    found = true;
+                }
+                break;
+            }
+        }
+
+        if (!found) {
+            return { success: true }; // Nothing to remove
+        }
+
+        const newCSS = `/* PixelGen CSS Overrides */\n\n${serializeRules(rules)}`;
+        await fs.writeFile(overridesPath, newCSS);
+
+        return { success: true };
+
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+};
+
+/**
+ * Append raw CSS (for LLM-generated CSS)
+ */
+export const appendRawCSS = async (
+    overridesPath: string,
+    css: string,
+    comment?: string
+): Promise<{ success: boolean; ruleCount: number; error?: string }> => {
+    try {
+        // Read existing
+        let existing = '';
+        try {
+            existing = await fs.readFile(overridesPath, 'utf-8');
+        } catch {
+            existing = '/* PixelGen CSS Overrides */\n';
+        }
+
+        // Validate the CSS minimally
+        const braceCount = (css.match(/\{/g) || []).length;
+        const closeBraceCount = (css.match(/\}/g) || []).length;
+
+        if (braceCount !== closeBraceCount) {
+            return { success: false, ruleCount: 0, error: 'Unbalanced braces in CSS' };
+        }
+
+        // Append
+        const separator = comment ? `\n\n/* ${comment} */\n` : '\n\n';
+        const newContent = existing + separator + css.trim() + '\n';
+
+        await fs.writeFile(overridesPath, newContent);
+
+        return { success: true, ruleCount: braceCount };
+
+    } catch (e: any) {
+        return { success: false, ruleCount: 0, error: e.message };
+    }
+};
+
+/**
+ * Get current rule count
+ */
+export const getRuleCount = async (overridesPath: string): Promise<number> => {
+    try {
+        const css = await fs.readFile(overridesPath, 'utf-8');
+        return (css.match(/\{/g) || []).length;
+    } catch {
+        return 0;
+    }
+};
+
+/**
+ * Clear all overrides
+ */
+export const clearOverrides = async (overridesPath: string): Promise<void> => {
+    await fs.writeFile(overridesPath, '/* PixelGen CSS Overrides */\n');
+};
+
+/**
+ * Backup current overrides
+ */
+export const backupOverrides = async (overridesPath: string): Promise<string> => {
+    try {
+        const content = await fs.readFile(overridesPath, 'utf-8');
+        const backupPath = overridesPath + '.backup';
+        await fs.writeFile(backupPath, content);
+        return backupPath;
+    } catch {
+        return '';
+    }
+};
+
+/**
+ * Restore from backup
+ */
+export const restoreOverrides = async (overridesPath: string): Promise<boolean> => {
+    try {
+        const backupPath = overridesPath + '.backup';
+        const content = await fs.readFile(backupPath, 'utf-8');
+        await fs.writeFile(overridesPath, content);
+        return true;
+    } catch {
+        return false;
+    }
+};

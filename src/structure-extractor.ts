@@ -1,58 +1,36 @@
 // src/structure-extractor.ts
 //
-// Extracts the semantic DOM structure from any website.
-// This structure is passed to the LLM to ensure generated code matches.
+// FIXED VERSION - Only extracts TOP-LEVEL semantic sections
+// Not every nested div with a class name
 //
 
-import { chromium, Page, ElementHandle } from 'playwright';
+import { chromium } from 'playwright';
 
-/**
- * Represents a node in the extracted DOM structure
- */
 export interface StructureNode {
-    // Core identity
     tag: string;
-    role: string;  // semantic role: header, nav, hero, products, footer, etc.
-
-    // Identification
+    role: string;
     id?: string;
     dataSection?: string;
-    ariaLabel?: string;
-
-    // Class analysis
-    semanticClasses: string[];  // Meaningful classes like "hero", "nav", "footer"
-
-    // Content hints
-    headingText?: string;       // Text of h1-h6 if present
-    buttonTexts: string[];      // Text of buttons
+    semanticClasses: string[];
+    headingText?: string;
+    buttonTexts: string[];
     linkCount: number;
     imageCount: number;
     hasForm: boolean;
-
-    // Layout analysis
     layout: 'flex-row' | 'flex-col' | 'grid' | 'block' | 'inline';
     gridColumns?: number;
     childCount: number;
-
-    // Visual properties (for matching)
     rect: { x: number; y: number; width: number; height: number };
     isFullWidth: boolean;
     isAboveFold: boolean;
-
-    // Nested structure
     children: StructureNode[];
-
-    // Depth in tree (for limiting extraction)
     depth: number;
 }
 
-/**
- * Configuration for structure extraction
- */
 export interface ExtractionConfig {
-    maxDepth: number;           // How deep to traverse (default: 6)
-    minElementSize: number;     // Ignore elements smaller than this (default: 20)
-    includeText: boolean;       // Include text content hints (default: true)
+    maxDepth: number;
+    minElementSize: number;
+    includeText: boolean;
     viewport: { width: number; height: number };
 }
 
@@ -63,318 +41,6 @@ const DEFAULT_CONFIG: ExtractionConfig = {
     viewport: { width: 1440, height: 900 }
 };
 
-/**
- * Semantic role detection based on tag, class, and content
- */
-const detectRole = (
-    tag: string,
-    id: string,
-    classes: string[],
-    ariaLabel: string,
-    headingText: string,
-    rect: { y: number; height: number },
-    viewportHeight: number
-): string => {
-    const classStr = classes.join(' ').toLowerCase();
-    const idLower = (id || '').toLowerCase();
-    const labelLower = (ariaLabel || '').toLowerCase();
-    const headingLower = (headingText || '').toLowerCase();
-
-    // Tag-based roles
-    if (tag === 'header') return 'header';
-    if (tag === 'nav') return 'navigation';
-    if (tag === 'footer') return 'footer';
-    if (tag === 'main') return 'main';
-    if (tag === 'aside') return 'sidebar';
-    if (tag === 'article') return 'article';
-    if (tag === 'form') return 'form';
-
-    // Class/ID based detection
-    if (/hero|banner|jumbotron|splash/i.test(classStr + idLower)) return 'hero';
-    if (/nav|menu|navigation/i.test(classStr + idLower)) return 'navigation';
-    if (/footer|foot/i.test(classStr + idLower)) return 'footer';
-    if (/header|head/i.test(classStr + idLower)) return 'header';
-    if (/product|shop|item|card/i.test(classStr + idLower)) return 'products';
-    if (/testimonial|review|quote/i.test(classStr + idLower)) return 'testimonials';
-    if (/feature|benefit/i.test(classStr + idLower)) return 'features';
-    if (/pricing|price|plan/i.test(classStr + idLower)) return 'pricing';
-    if (/faq|question|accordion/i.test(classStr + idLower)) return 'faq';
-    if (/contact|form/i.test(classStr + idLower)) return 'contact';
-    if (/about|team|story/i.test(classStr + idLower)) return 'about';
-    if (/gallery|portfolio|showcase/i.test(classStr + idLower)) return 'gallery';
-    if (/cta|call-to-action|action/i.test(classStr + idLower)) return 'cta';
-    if (/newsletter|subscribe|signup/i.test(classStr + idLower)) return 'newsletter';
-    if (/logo|brand/i.test(classStr + idLower)) return 'logo';
-    if (/social|share/i.test(classStr + idLower)) return 'social';
-    if (/comparison|compare|vs/i.test(classStr + idLower)) return 'comparison';
-    if (/stats|numbers|counter/i.test(classStr + idLower)) return 'stats';
-
-    // Heading-based detection
-    if (/product|shop/i.test(headingLower)) return 'products';
-    if (/testimonial|review|customer|said/i.test(headingLower)) return 'testimonials';
-    if (/feature|benefit|why/i.test(headingLower)) return 'features';
-    if (/faq|question|ask/i.test(headingLower)) return 'faq';
-    if (/pricing|price|plan/i.test(headingLower)) return 'pricing';
-
-    // Position-based heuristics
-    if (tag === 'section') {
-        if (rect.y < viewportHeight * 0.5) return 'hero-section';
-        return 'section';
-    }
-
-    // Default
-    if (tag === 'div') return 'container';
-    return 'element';
-};
-
-/**
- * Extract semantic class names (filter out utility classes)
- */
-const extractSemanticClasses = (classes: string[]): string[] => {
-    return classes.filter(c => {
-        if (!c || c.length < 3) return false;
-
-        // Skip Tailwind utilities
-        if (/^(bg|text|p|m|w|h|flex|grid|border|rounded|shadow|font|leading|tracking|gap|space|items|justify|self|place|order|col|row|overflow|z|opacity|transition|duration|ease|transform|scale|rotate|translate|skew|origin|cursor|select|resize|list|appearance|outline|ring|fill|stroke)-/.test(c)) {
-            return false;
-        }
-
-        // Skip responsive prefixes
-        if (/^(sm|md|lg|xl|2xl):/.test(c)) return false;
-
-        // Skip state prefixes
-        if (/^(hover|focus|active|disabled|visited|first|last|odd|even|group|peer):/.test(c)) return false;
-
-        // Skip hash-like classes (CSS modules, styled-components)
-        if (/^[a-z]{1,3}[A-Z0-9]/.test(c)) return false;
-        if (/^_/.test(c)) return false;
-        if (/^css-/.test(c)) return false;
-        if (/[A-Za-z0-9]{6,}$/.test(c) && c.length > 10) return false;
-
-        return true;
-    });
-};
-
-/**
- * Detect layout type from computed styles
- */
-const detectLayout = (styles: CSSStyleDeclaration): StructureNode['layout'] => {
-    const display = styles.display;
-    const flexDirection = styles.flexDirection;
-
-    if (display === 'grid') return 'grid';
-    if (display === 'flex') {
-        return flexDirection === 'column' ? 'flex-col' : 'flex-row';
-    }
-    if (display === 'inline' || display === 'inline-block') return 'inline';
-    return 'block';
-};
-
-/**
- * Main extraction function - runs in browser context
- */
-const extractStructureInBrowser = (config: ExtractionConfig): StructureNode | null => {
-    const viewportHeight = config.viewport.height;
-    const viewportWidth = config.viewport.width;
-
-    const processElement = (el: Element, depth: number): StructureNode | null => {
-        if (depth > config.maxDepth) return null;
-
-        const tag = el.tagName.toLowerCase();
-
-        // Skip non-visual elements
-        if (['script', 'style', 'noscript', 'meta', 'link', 'head', 'title', 'template'].includes(tag)) {
-            return null;
-        }
-
-        // Skip SVG internals (but keep the SVG itself)
-        if (['path', 'circle', 'rect', 'line', 'g', 'defs', 'use', 'clippath', 'lineargradient', 'radialgradient', 'stop', 'polygon', 'polyline', 'ellipse'].includes(tag)) {
-            return null;
-        }
-
-        const styles = window.getComputedStyle(el);
-
-        // Skip hidden elements
-        if (styles.display === 'none' || styles.visibility === 'hidden') {
-            return null;
-        }
-
-        const rect = el.getBoundingClientRect();
-
-        // Skip tiny elements
-        if (rect.width < config.minElementSize && rect.height < config.minElementSize) {
-            return null;
-        }
-
-        // Skip off-screen elements
-        if (rect.bottom < 0 || rect.top > viewportHeight * 5) {
-            return null;
-        }
-
-        // Gather element info
-        const id = el.id || undefined;
-        const classList = Array.from(el.classList);
-        const semanticClasses = extractSemanticClasses(classList);
-        const dataSection = el.getAttribute('data-section') || undefined;
-        const ariaLabel = el.getAttribute('aria-label') || undefined;
-
-        // Content analysis
-        const headingEl = el.querySelector('h1, h2, h3, h4, h5, h6');
-        const headingText = headingEl?.textContent?.trim().slice(0, 100) || undefined;
-
-        const buttons = el.querySelectorAll('button, [role="button"], .btn, a.button');
-        const buttonTexts = Array.from(buttons)
-            .map(b => b.textContent?.trim().slice(0, 50))
-            .filter(Boolean) as string[];
-
-        const links = el.querySelectorAll('a[href]');
-        const images = el.querySelectorAll('img, picture, [role="img"]');
-        const forms = el.querySelectorAll('form, [role="form"]');
-
-        // Layout analysis
-        const layout = detectLayout(styles);
-        let gridColumns: number | undefined;
-        if (layout === 'grid') {
-            const cols = styles.gridTemplateColumns;
-            if (cols) {
-                gridColumns = cols.split(' ').filter(c => c && c !== 'none').length;
-            }
-        }
-
-        // Detect role
-        const role = detectRole(
-            tag,
-            id || '',
-            classList,
-            ariaLabel || '',
-            headingText || '',
-            { y: rect.y, height: rect.height },
-            viewportHeight
-        );
-
-        // Process children
-        const children: StructureNode[] = [];
-        for (const child of Array.from(el.children)) {
-            const childNode = processElement(child, depth + 1);
-            if (childNode) {
-                children.push(childNode);
-            }
-        }
-
-        return {
-            tag,
-            role,
-            id,
-            dataSection,
-            ariaLabel,
-            semanticClasses,
-            headingText,
-            buttonTexts: buttonTexts.slice(0, 5), // Limit
-            linkCount: links.length,
-            imageCount: images.length,
-            hasForm: forms.length > 0,
-            layout,
-            gridColumns,
-            childCount: el.children.length,
-            rect: {
-                x: Math.round(rect.x),
-                y: Math.round(rect.y),
-                width: Math.round(rect.width),
-                height: Math.round(rect.height)
-            },
-            isFullWidth: rect.width >= viewportWidth * 0.9,
-            isAboveFold: rect.top < viewportHeight,
-            children,
-            depth
-        };
-    };
-
-    // Helper function referenced in processElement
-    function extractSemanticClasses(classes: string[]): string[] {
-        return classes.filter(c => {
-            if (!c || c.length < 3) return false;
-            if (/^(bg|text|p|m|w|h|flex|grid|border|rounded|shadow|font|leading|tracking|gap|space|items|justify|self|place|order|col|row|overflow|z|opacity|transition|duration|ease|transform|scale|rotate|translate|skew|origin|cursor|select|resize|list|appearance|outline|ring|fill|stroke)-/.test(c)) {
-                return false;
-            }
-            if (/^(sm|md|lg|xl|2xl):/.test(c)) return false;
-            if (/^(hover|focus|active|disabled|visited|first|last|odd|even|group|peer):/.test(c)) return false;
-            if (/^[a-z]{1,3}[A-Z0-9]/.test(c)) return false;
-            if (/^_/.test(c)) return false;
-            if (/^css-/.test(c)) return false;
-            if (/[A-Za-z0-9]{6,}$/.test(c) && c.length > 10) return false;
-            return true;
-        });
-    }
-
-    function detectLayout(styles: CSSStyleDeclaration): 'flex-row' | 'flex-col' | 'grid' | 'block' | 'inline' {
-        const display = styles.display;
-        const flexDirection = styles.flexDirection;
-        if (display === 'grid') return 'grid';
-        if (display === 'flex') {
-            return flexDirection === 'column' ? 'flex-col' : 'flex-row';
-        }
-        if (display === 'inline' || display === 'inline-block') return 'inline';
-        return 'block';
-    }
-
-    function detectRole(
-        tag: string,
-        id: string,
-        classes: string[],
-        ariaLabel: string,
-        headingText: string,
-        rect: { y: number; height: number },
-        viewportHeight: number
-    ): string {
-        const classStr = classes.join(' ').toLowerCase();
-        const idLower = (id || '').toLowerCase();
-        const headingLower = (headingText || '').toLowerCase();
-
-        if (tag === 'header') return 'header';
-        if (tag === 'nav') return 'navigation';
-        if (tag === 'footer') return 'footer';
-        if (tag === 'main') return 'main';
-        if (tag === 'aside') return 'sidebar';
-        if (tag === 'article') return 'article';
-        if (tag === 'form') return 'form';
-
-        if (/hero|banner|jumbotron|splash/i.test(classStr + idLower)) return 'hero';
-        if (/nav|menu|navigation/i.test(classStr + idLower)) return 'navigation';
-        if (/footer|foot/i.test(classStr + idLower)) return 'footer';
-        if (/header|head/i.test(classStr + idLower)) return 'header';
-        if (/product|shop|item|card/i.test(classStr + idLower)) return 'products';
-        if (/testimonial|review|quote/i.test(classStr + idLower)) return 'testimonials';
-        if (/feature|benefit/i.test(classStr + idLower)) return 'features';
-        if (/pricing|price|plan/i.test(classStr + idLower)) return 'pricing';
-        if (/faq|question|accordion/i.test(classStr + idLower)) return 'faq';
-        if (/contact/i.test(classStr + idLower)) return 'contact';
-        if (/about|team|story/i.test(classStr + idLower)) return 'about';
-        if (/gallery|portfolio|showcase/i.test(classStr + idLower)) return 'gallery';
-        if (/cta|call-to-action/i.test(classStr + idLower)) return 'cta';
-        if (/newsletter|subscribe/i.test(classStr + idLower)) return 'newsletter';
-        if (/comparison|compare/i.test(classStr + idLower)) return 'comparison';
-
-        if (/product|shop/i.test(headingLower)) return 'products';
-        if (/testimonial|review|customer/i.test(headingLower)) return 'testimonials';
-        if (/feature|benefit|why/i.test(headingLower)) return 'features';
-        if (/faq|question/i.test(headingLower)) return 'faq';
-        if (/pricing|price|plan/i.test(headingLower)) return 'pricing';
-
-        if (tag === 'section') {
-            if (rect.y < viewportHeight * 0.5) return 'hero-section';
-            return 'section';
-        }
-
-        if (tag === 'div') return 'container';
-        return 'element';
-    }
-
-    return processElement(document.body, 0);
-};
-
-/**
- * Extract structure from a URL
- */
 export const extractStructure = async (
     url: string,
     config: Partial<ExtractionConfig> = {}
@@ -387,9 +53,184 @@ export const extractStructure = async (
 
     try {
         await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-        await page.waitForTimeout(1500); // Let animations settle
+        await page.waitForTimeout(1500);
 
-        const structure = await page.evaluate(extractStructureInBrowser, fullConfig);
+        const structure = await page.evaluate((cfg) => {
+            const viewportHeight = cfg.viewport.height;
+            const viewportWidth = cfg.viewport.width;
+
+            // ONLY these tags can be top-level sections
+            const SECTION_TAGS = ['header', 'nav', 'main', 'section', 'article', 'aside', 'footer'];
+
+            // Semantic role detection - ONLY for direct children of body or main
+            const detectTopLevelRole = (
+                el: Element,
+                isDirectChildOfBodyOrMain: boolean
+            ): string => {
+                const tag = el.tagName.toLowerCase();
+                const classList = Array.from(el.classList);
+                const classStr = classList.join(' ').toLowerCase();
+                const id = (el.id || '').toLowerCase();
+
+                // Only assign semantic roles to top-level elements
+                if (!isDirectChildOfBodyOrMain && !SECTION_TAGS.includes(tag)) {
+                    return 'container';
+                }
+
+                // Tag-based roles (highest priority for semantic tags)
+                if (tag === 'header') return 'header';
+                if (tag === 'nav') return 'navigation';
+                if (tag === 'footer') return 'footer';
+                if (tag === 'main') return 'main';
+                if (tag === 'aside') return 'sidebar';
+
+                // For sections, detect by content/class
+                if (tag === 'section' || isDirectChildOfBodyOrMain) {
+                    // Get heading for context
+                    const heading = el.querySelector('h1, h2, h3');
+                    const headingText = (heading?.textContent || '').toLowerCase();
+
+                    // Hero detection (usually first section, has large image/text)
+                    const rect = el.getBoundingClientRect();
+                    if (rect.top < 200 && rect.height > 400) {
+                        if (/hero|banner|splash|jumbotron/i.test(classStr + id)) return 'hero';
+                        // If it's the first big section, likely hero
+                        const prevSections = el.parentElement?.querySelectorAll('section');
+                        if (prevSections && Array.from(prevSections).indexOf(el as HTMLElement) === 0) {
+                            return 'hero';
+                        }
+                    }
+
+                    // Content-based detection
+                    if (/product|shop|item|catalog/i.test(classStr + id + headingText)) return 'products';
+                    if (/testimonial|review|customer|quote/i.test(classStr + id + headingText)) return 'testimonials';
+                    if (/feature|benefit|why/i.test(classStr + id + headingText)) return 'features';
+                    if (/pricing|price|plan/i.test(classStr + id + headingText)) return 'pricing';
+                    if (/faq|question|accordion/i.test(classStr + id + headingText)) return 'faq';
+                    if (/contact/i.test(classStr + id + headingText)) return 'contact';
+                    if (/about|team|story/i.test(classStr + id + headingText)) return 'about';
+                    if (/gallery|portfolio/i.test(classStr + id + headingText)) return 'gallery';
+                    if (/cta|call-to-action/i.test(classStr + id + headingText)) return 'cta';
+                    if (/comparison|compare/i.test(classStr + id + headingText)) return 'comparison';
+                    if (/newsletter|subscribe/i.test(classStr + id + headingText)) return 'newsletter';
+
+                    return 'section'; // Generic section
+                }
+
+                return 'container';
+            };
+
+            const extractSemanticClasses = (classes: string[]): string[] => {
+                return classes.filter(c => {
+                    if (!c || c.length < 3) return false;
+                    // Skip Tailwind utilities
+                    if (/^(bg|text|p|m|w|h|flex|grid|border|rounded|shadow|font|leading|tracking|gap|space|items|justify|self|place|order|col|row|overflow|z|opacity|transition|duration|ease|transform|scale|rotate|translate|skew|origin|cursor|select|resize|list|appearance|outline|ring|fill|stroke)-/.test(c)) {
+                        return false;
+                    }
+                    if (/^(sm|md|lg|xl|2xl):/.test(c)) return false;
+                    if (/^(hover|focus|active|disabled):/.test(c)) return false;
+                    if (/^[a-z]{1,3}[A-Z0-9]/.test(c)) return false;
+                    if (/^_/.test(c)) return false;
+                    return true;
+                });
+            };
+
+            const detectLayout = (styles: CSSStyleDeclaration): 'flex-row' | 'flex-col' | 'grid' | 'block' | 'inline' => {
+                const display = styles.display;
+                const flexDirection = styles.flexDirection;
+                if (display === 'grid') return 'grid';
+                if (display === 'flex') {
+                    return flexDirection === 'column' ? 'flex-col' : 'flex-row';
+                }
+                if (display === 'inline' || display === 'inline-block') return 'inline';
+                return 'block';
+            };
+
+            const processElement = (el: Element, depth: number, isDirectChildOfBodyOrMain: boolean): StructureNode | null => {
+                if (depth > cfg.maxDepth) return null;
+
+                const tag = el.tagName.toLowerCase();
+
+                // Skip non-visual elements
+                if (['script', 'style', 'noscript', 'meta', 'link', 'head', 'title', 'template', 'svg', 'path', 'circle', 'rect', 'line', 'g', 'defs'].includes(tag)) {
+                    return null;
+                }
+
+                const styles = window.getComputedStyle(el);
+                if (styles.display === 'none' || styles.visibility === 'hidden') {
+                    return null;
+                }
+
+                const rect = el.getBoundingClientRect();
+                if (rect.width < cfg.minElementSize && rect.height < cfg.minElementSize) {
+                    return null;
+                }
+
+                const classList = Array.from(el.classList);
+                const role = detectTopLevelRole(el, isDirectChildOfBodyOrMain);
+
+                // Content analysis
+                const headingEl = el.querySelector(':scope > h1, :scope > h2, :scope > h3, :scope > div > h1, :scope > div > h2');
+                const headingText = headingEl?.textContent?.trim().slice(0, 100) || undefined;
+
+                const buttons = el.querySelectorAll(':scope > button, :scope > a.btn, :scope > div > button');
+                const buttonTexts = Array.from(buttons)
+                    .map(b => b.textContent?.trim().slice(0, 50))
+                    .filter(Boolean) as string[];
+
+                const links = el.querySelectorAll('a[href]');
+                const images = el.querySelectorAll('img');
+                const forms = el.querySelectorAll('form');
+
+                const layout = detectLayout(styles);
+                let gridColumns: number | undefined;
+                if (layout === 'grid') {
+                    const cols = styles.gridTemplateColumns;
+                    if (cols && cols !== 'none') {
+                        gridColumns = cols.split(' ').filter(c => c && c !== 'none').length;
+                    }
+                }
+
+                // Process children
+                const children: StructureNode[] = [];
+                const childIsDirectChild = tag === 'body' || tag === 'main';
+
+                for (const child of Array.from(el.children)) {
+                    const childNode = processElement(child, depth + 1, childIsDirectChild);
+                    if (childNode) {
+                        children.push(childNode);
+                    }
+                }
+
+                return {
+                    tag,
+                    role,
+                    id: el.id || undefined,
+                    dataSection: el.getAttribute('data-section') || undefined,
+                    semanticClasses: extractSemanticClasses(classList),
+                    headingText,
+                    buttonTexts: buttonTexts.slice(0, 5),
+                    linkCount: links.length,
+                    imageCount: images.length,
+                    hasForm: forms.length > 0,
+                    layout,
+                    gridColumns,
+                    childCount: el.children.length,
+                    rect: {
+                        x: Math.round(rect.x),
+                        y: Math.round(rect.y),
+                        width: Math.round(rect.width),
+                        height: Math.round(rect.height)
+                    },
+                    isFullWidth: rect.width >= viewportWidth * 0.9,
+                    isAboveFold: rect.top < viewportHeight,
+                    children,
+                    depth
+                };
+            };
+
+            return processElement(document.body, 0, true);
+        }, fullConfig);
 
         return structure;
     } finally {
@@ -398,19 +239,15 @@ export const extractStructure = async (
 };
 
 /**
- * Convert structure to a human-readable tree string
+ * Convert structure to a human-readable tree
  */
 export const structureToTree = (node: StructureNode, indent: string = ''): string => {
     const lines: string[] = [];
 
-    // Build node description
     let desc = node.tag;
     if (node.id) desc += `#${node.id}`;
-    if (node.role !== 'container' && node.role !== 'element') {
+    if (node.role !== 'container') {
         desc += ` [${node.role}]`;
-    }
-    if (node.semanticClasses.length > 0) {
-        desc += `.${node.semanticClasses.slice(0, 2).join('.')}`;
     }
     if (node.headingText) {
         desc += ` "${node.headingText.slice(0, 30)}..."`;
@@ -421,29 +258,21 @@ export const structureToTree = (node: StructureNode, indent: string = ''): strin
     if (node.imageCount > 0) {
         desc += ` [${node.imageCount} img]`;
     }
-    if (node.buttonTexts.length > 0) {
-        desc += ` [btn: ${node.buttonTexts.slice(0, 2).join(', ')}]`;
-    }
 
     lines.push(indent + desc);
 
-    // Recurse to children
     for (let i = 0; i < node.children.length; i++) {
         const child = node.children[i];
         const isLast = i === node.children.length - 1;
         const childIndent = indent + (isLast ? '└── ' : '├── ');
-        const nextIndent = indent + (isLast ? '    ' : '│   ');
-
-        lines.push(...structureToTree(child, childIndent).split('\n').map((line, idx) =>
-            idx === 0 ? line : nextIndent + line.trim()
-        ));
+        lines.push(structureToTree(child, childIndent));
     }
 
     return lines.join('\n');
 };
 
 /**
- * Convert structure to a simplified JSON schema for LLM consumption
+ * Convert structure to JSON schema for LLM
  */
 export const structureToSchema = (node: StructureNode): object => {
     const simplified: any = {
@@ -452,16 +281,11 @@ export const structureToSchema = (node: StructureNode): object => {
     };
 
     if (node.id) simplified.id = node.id;
-    if (node.dataSection) simplified.dataSection = node.dataSection;
     if (node.headingText) simplified.heading = node.headingText;
     if (node.layout !== 'block') simplified.layout = node.layout;
     if (node.gridColumns) simplified.gridColumns = node.gridColumns;
     if (node.imageCount > 0) simplified.images = node.imageCount;
     if (node.buttonTexts.length > 0) simplified.buttons = node.buttonTexts;
-    if (node.linkCount > 0) simplified.links = node.linkCount;
-    if (node.hasForm) simplified.hasForm = true;
-    if (node.isFullWidth) simplified.fullWidth = true;
-    if (node.semanticClasses.length > 0) simplified.classes = node.semanticClasses;
 
     if (node.children.length > 0) {
         simplified.children = node.children.map(c => structureToSchema(c));
@@ -471,91 +295,57 @@ export const structureToSchema = (node: StructureNode): object => {
 };
 
 /**
- * Convert structure to an HTML skeleton that the LLM should fill in
- */
-export const structureToHtmlSkeleton = (node: StructureNode, indent: string = ''): string => {
-    const lines: string[] = [];
-
-    // Build opening tag
-    let openTag = `<${node.tag}`;
-
-    // Add data-section for major sections
-    if (['header', 'hero', 'products', 'testimonials', 'features', 'pricing',
-        'faq', 'footer', 'navigation', 'cta', 'about', 'contact', 'gallery',
-        'comparison', 'newsletter', 'stats'].includes(node.role)) {
-        openTag += ` data-section="${node.role}"`;
-    }
-
-    if (node.id) {
-        openTag += ` id="${node.id}"`;
-    }
-
-    openTag += ` className="/* TODO: Tailwind classes */"`;
-    openTag += '>';
-
-    // Add content hints as comments
-    const hints: string[] = [];
-    if (node.headingText) {
-        hints.push(`Heading: "${node.headingText}"`);
-    }
-    if (node.imageCount > 0) {
-        hints.push(`${node.imageCount} image(s)`);
-    }
-    if (node.buttonTexts.length > 0) {
-        hints.push(`Buttons: ${node.buttonTexts.join(', ')}`);
-    }
-    if (node.linkCount > 0) {
-        hints.push(`${node.linkCount} link(s)`);
-    }
-    if (node.layout !== 'block') {
-        hints.push(`Layout: ${node.layout}${node.gridColumns ? ` (${node.gridColumns} cols)` : ''}`);
-    }
-
-    if (hints.length > 0) {
-        lines.push(`${indent}${openTag} {/* ${hints.join(' | ')} */}`);
-    } else {
-        lines.push(`${indent}${openTag}`);
-    }
-
-    // Recurse to children
-    for (const child of node.children) {
-        lines.push(structureToHtmlSkeleton(child, indent + '  '));
-    }
-
-    // Closing tag
-    lines.push(`${indent}</${node.tag}>`);
-
-    return lines.join('\n');
-};
-
-/**
- * Count total nodes in structure
- */
-export const countNodes = (node: StructureNode): number => {
-    return 1 + node.children.reduce((sum, child) => sum + countNodes(child), 0);
-};
-
-/**
- * Get section summary
+ * Get ONLY top-level sections (not nested elements)
  */
 export const getSectionSummary = (node: StructureNode): Array<{ role: string; heading?: string; depth: number }> => {
     const sections: Array<{ role: string; heading?: string; depth: number }> = [];
 
-    const traverse = (n: StructureNode) => {
-        if (['header', 'hero', 'products', 'testimonials', 'features', 'pricing',
-            'faq', 'footer', 'navigation', 'cta', 'about', 'contact', 'gallery',
-            'comparison', 'newsletter', 'stats', 'hero-section', 'section'].includes(n.role)) {
+    // Only look at immediate children and their immediate children
+    const collectSections = (n: StructureNode, currentDepth: number) => {
+        // Only collect sections from top 3 levels
+        if (currentDepth > 3) return;
+
+        // Only these roles count as "sections"
+        const SECTION_ROLES = ['header', 'navigation', 'hero', 'main', 'products', 'testimonials',
+            'features', 'pricing', 'faq', 'footer', 'cta', 'about', 'contact',
+            'gallery', 'comparison', 'newsletter', 'section', 'sidebar'];
+
+        if (SECTION_ROLES.includes(n.role) && n.role !== 'container') {
             sections.push({
                 role: n.role,
                 heading: n.headingText,
                 depth: n.depth
             });
         }
-        for (const child of n.children) {
-            traverse(child);
+
+        // Only recurse into body, main, or wrapper divs
+        if (n.tag === 'body' || n.tag === 'main' || (n.tag === 'div' && n.role === 'container')) {
+            for (const child of n.children) {
+                collectSections(child, currentDepth + 1);
+            }
         }
     };
 
-    traverse(node);
-    return sections;
+    collectSections(node, 0);
+
+    // Deduplicate - only keep first occurrence of each role
+    const seen = new Set<string>();
+    const unique: typeof sections = [];
+
+    for (const section of sections) {
+        // Allow multiple 'section' roles but dedupe specific roles
+        if (section.role === 'section' || !seen.has(section.role)) {
+            seen.add(section.role);
+            unique.push(section);
+        }
+    }
+
+    return unique;
+};
+
+/**
+ * Count total nodes
+ */
+export const countNodes = (node: StructureNode): number => {
+    return 1 + node.children.reduce((sum, child) => sum + countNodes(child), 0);
 };

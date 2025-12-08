@@ -1,26 +1,35 @@
+// src/ground-truth/types.ts
+// Type definitions for the ground-truth extraction and diffing system
+
+export interface ElementRect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
 
 export interface ElementStyle {
-    // Stable identifier for matching between base and generated
-    stableSelector: string;
+    // Selectors
+    selector?: string;           // Position-based selector for matching
+    stableSelector?: string;     // Same as selector (for compatibility)
+    cssSelector: string;         // CSS selector for applying styles
 
-    // Original CSS selector (for applying fixes)
-    cssSelector: string;
-
-    // Element metadata
+    // Element info
     tag: string;
-    text?: string;
     section?: string;
+    sectionIndex?: number;
 
-    // Bounding box (for prioritization)
-    rect: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    };
+    // Position (for matching)
+    rect: ElementRect;
 
-    // Computed styles (the ground truth)
+    // Computed styles
     styles: Record<string, string>;
+
+    // Priority
+    importance?: number;
+
+    // Optional text content (for debugging)
+    textContent?: string;
 }
 
 export interface GroundTruth {
@@ -28,40 +37,37 @@ export interface GroundTruth {
     device: 'desktop' | 'mobile';
     viewport: { width: number; height: number };
     extractedAt: string;
-    elements: Map<string, ElementStyle>; // keyed by stableSelector
+    elements: Map<string, ElementStyle>;
 }
+
+export type StyleCategory = 'color' | 'typography' | 'spacing' | 'border' | 'layout' | 'effects';
 
 export interface StyleChange {
-    stableSelector: string;
-    cssSelector: string;
+    // Selectors (all should be the same for the generated site)
+    selector: string;            // Position-based key
+    stableSelector: string;      // For change tracking
+    cssSelector: string;         // For CSS rules
+
+    // The change
     property: string;
-    expected: string;  // from ground truth (base site)
-    actual: string;    // from current state (generated site)
+    expected: string;            // What the base site has (target)
+    actual: string;              // What the generated site has (current)
 
-    // Metadata for prioritization
+    // Metadata
+    category: StyleCategory;
+    importance: number;
+    priority?: number;           // Computed priority score
     section?: string;
-    tag: string;
-    rect: { x: number; y: number; width: number; height: number };
+    sectionIndex?: number;
 
-    // Computed priority (higher = more important)
-    priority: number;
-    category: 'layout' | 'spacing' | 'typography' | 'color' | 'effects';
+    // Element info (for prioritizer and validator)
+    tag?: string;
+    rect?: ElementRect;
 }
 
-export interface StructuredDiff {
-    baseUrl: string;
-    targetUrl: string;
-    device: 'desktop' | 'mobile';
-    timestamp: string;
+export interface DiffResult {
     changes: StyleChange[];
-    summary: {
-        totalDifferences: number;
-        byCategory: Record<string, number>;
-        bySection: Record<string, number>;
-    };
-}
-
-export interface AppliedChange extends StyleChange {
-    iteration: number;
-    appliedAt: string;
+    matchedCount: number;
+    unmatchedCount: number;
+    byCategory: Record<string, number>;
 }
