@@ -1,1564 +1,1107 @@
-# PixelGen v2: Deterministic Refinement Architecture
+# PixelGen Improvement Plan: Achieving 90%+ Accuracy
 
 ## Executive Summary
 
-This plan transforms the iteration loop from **LLM-regenerates-code** to **LLM-analyzes → Deterministic-patches**. The key insight is that once we have the initial HTML structure, all subsequent iterations should only modify CSS through programmatic manipulation, not LLM code generation.
+After analyzing your codebase, I've identified the key bottlenecks limiting your accuracy:
+
+1. **Initial Generation (60% → 90%)**: The LLM doesn't have enough structured information about the target site before generating code
+2. **Iteration Improvement (10% max)**: CSS refinement is too broad, and the element matching system has fundamental flaws
+3. **Multi-Page Builder**: Shared component detection is heuristic-based rather than visual-comparison based
 
 ---
 
-## Architecture Overview
+## GOAL 1: Achieve 90% First Generation Accuracy
+
+### Root Cause Analysis
+
+Your current approach sends a screenshot + generic prompt to the LLM. The LLM must:
+- Guess at colors (often gets hex values wrong)
+- Estimate spacing (px values are imprecise)
+- Infer typography (font families, sizes, weights)
+- Deduce layout structure (grid columns, flex arrangements)
+- Guess element counts (items in lists/grids)
+
+**Key Insight**: The LLM already "sees" the image well, but it lacks QUANTITATIVE data to match pixel-perfectly.
+
+### Solution: Pre-Generation Extraction Pipeline
+
+Create a **"Site DNA Extraction"** phase that runs BEFORE the LLM generation:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           PHASE 1: INITIAL GENERATION                        │
-│                                                                              │
-│   Base URL Screenshot ──► Vision LLM ──► Full React Bundle                  │
-│                                      ──► Structure Lock (HTML frozen)        │
-│                                      ──► Base CSS extracted                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        PHASE 2: GROUND TRUTH EXTRACTION                      │
-│                                                                              │
-│   Base URL ──────────────────► extractGroundTruth() ──► ground-truth.json   │
-│   Generated Site ────────────► extractCurrentState() ──► current-state.json │
-│                                                                              │
-│   Output: Per-element computed styles with stable selectors                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          PHASE 3: STRUCTURED DIFF                            │
-│                                                                              │
-│   ground-truth.json ─┬──► computeStructuredDiff() ──► StyleChange[]         │
-│   current-state.json ─┘                                                      │
-│                                                                              │
-│   Output: Array of { selector, property, expected, actual, priority }        │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           PHASE 4: PRIORITIZATION                            │
-│                                                                              │
-│   StyleChange[] ──► prioritizeChanges() ──► Top N changes for this iter     │
-│                                                                              │
-│   Factors: visual impact, element size, above-fold, category                 │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        PHASE 5: DETERMINISTIC PATCH                          │
-│                                                                              │
-│   Option A: CSS AST Manipulation (postcss)                                   │
-│   Option B: Append to overrides.css file                                     │
-│   Option C: Inject inline styles via Playwright                              │
-│                                                                              │
-│   NO LLM INVOLVED - Pure programmatic transformation                         │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            PHASE 6: VALIDATION                               │
-│                                                                              │
-│   Re-render ──► Re-extract styles ──► Verify changes applied                │
-│   If regression detected ──► Rollback specific change                        │
-│   If improvement ──► Commit change, continue loop                            │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                        │
-                                        ▼
-                              Loop until converged
-                         (or max iterations reached)
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     ENHANCED GENERATION PIPELINE                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  1. CAPTURE          2. EXTRACT DNA        3. GENERATE           4. VALIDATE
+│  ┌──────────┐        ┌──────────────┐      ┌──────────────┐      ┌──────────┐
+│  │Screenshot│───────▶│ Site DNA     │─────▶│ LLM + DNA    │─────▶│Pixel     │
+│  │  + DOM   │        │ Extraction   │      │ Prompt       │      │Compare   │
+│  └──────────┘        └──────────────┘      └──────────────┘      └──────────┘
+│       │                    │                     │                    │
+│       ▼                    ▼                     ▼                    ▼
+│  • Full page           • Typography          • Structured          • Quick 
+│    screenshot            extracted             code gen              similarity
+│  • DOM snapshot        • Colors mapped       • Exact values         check
+│  • Computed            • Layout grid           from DNA           • Structure
+│    styles              • Element counts      • Section order         validation
+│                        • Spacing map           enforced
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## File Structure
-
-```
-src/
-├── pixelgen-v2.ts              # NEW: Main orchestrator (replaces pixelgen.ts loop)
-├── ground-truth/
-│   ├── extractor.ts            # NEW: Extract computed styles with stable selectors
-│   ├── differ.ts               # NEW: Compute structured diff between states
-│   ├── prioritizer.ts          # NEW: Rank changes by visual impact
-│   └── types.ts                # NEW: Shared interfaces
-├── patcher/
-│   ├── css-patcher.ts          # NEW: PostCSS-based CSS manipulation
-│   ├── override-generator.ts   # NEW: Generate CSS override rules
-│   ├── validator.ts            # NEW: Verify changes applied correctly
-│   └── rollback.ts             # NEW: Revert specific changes on regression
-├── style-diff.ts               # EXISTING: Keep for visual comparison
-├── dom-extractor.ts            # EXISTING: Keep for DOM analysis
-├── similarity.ts               # EXISTING: Keep for scoring
-└── llm-feedback.ts             # MODIFY: Only used for initial generation
-```
-
----
-
-## Phase 1: Initial Generation (Minimal Changes)
-
-### What Changes
-- After initial LLM generation, we **freeze the HTML/JSX structure**
-- Extract all CSS into a separate `base.css` file
-- Create an empty `overrides.css` that will be modified in iterations
-
-### File: `src/pixelgen-v2.ts` (New Main Orchestrator)
+### Implementation: Site DNA Extractor
 
 ```typescript
-// src/pixelgen-v2.ts
+// src/site-dna-extractor.ts
 
-import { extractGroundTruth, extractCurrentState } from './ground-truth/extractor';
-import { computeStructuredDiff } from './ground-truth/differ';
-import { prioritizeChanges } from './ground-truth/prioritizer';
-import { applyCSSPatches } from './patcher/css-patcher';
-import { validateChanges } from './patcher/validator';
-import { rollbackChange } from './patcher/rollback';
+interface SiteDNA {
+  // Typography
+  typography: {
+    fonts: Array<{
+      family: string;
+      weights: number[];
+      googleFontUrl?: string;
+    }>;
+    textStyles: Array<{
+      selector: string;
+      fontSize: string;
+      fontWeight: string;
+      lineHeight: string;
+      letterSpacing: string;
+      color: string;
+      role: 'h1' | 'h2' | 'h3' | 'body' | 'caption' | 'button';
+    }>;
+  };
+  
+  // Colors
+  colors: {
+    palette: Array<{
+      hex: string;
+      rgb: string;
+      usage: 'background' | 'text' | 'border' | 'accent';
+      frequency: number;  // How often used
+    }>;
+    dominant: string;
+    backgrounds: string[];
+    textColors: string[];
+  };
+  
+  // Layout Structure
+  layout: {
+    sections: Array<{
+      index: number;
+      tag: string;
+      role: string;  // 'header' | 'hero' | 'features' | 'testimonials' | etc.
+      rect: { x: number; y: number; width: number; height: number };
+      backgroundColor: string;
+      padding: { top: number; right: number; bottom: number; left: number };
+      layoutType: 'grid' | 'flex-row' | 'flex-col' | 'stack';
+      gridInfo?: { columns: number; gap: number; };
+      flexInfo?: { direction: string; gap: number; justifyContent: string; alignItems: string; };
+      childCount: number;
+      headingText?: string;
+    }>;
+    maxWidth: number;
+    containerPadding: number;
+  };
+  
+  // Element Inventory
+  elements: {
+    images: Array<{
+      src: string;
+      localPath: string;
+      rect: { x: number; y: number; width: number; height: number };
+      sectionIndex: number;
+      role: 'hero' | 'product' | 'avatar' | 'logo' | 'background' | 'icon';
+      aspectRatio: number;
+    }>;
+    buttons: Array<{
+      text: string;
+      rect: { x: number; y: number; width: number; height: number };
+      style: {
+        backgroundColor: string;
+        textColor: string;
+        borderRadius: string;
+        padding: string;
+      };
+      sectionIndex: number;
+    }>;
+    links: Array<{
+      text: string;
+      href: string;
+      isNavigation: boolean;
+    }>;
+    icons: Array<{
+      name: string;  // Attempted icon identification
+      rect: { x: number; y: number; width: number; height: number };
+      sectionIndex: number;
+    }>;
+  };
+  
+  // Spacing System
+  spacing: {
+    baseUnit: number;  // Detected base spacing unit (usually 4 or 8)
+    sectionGaps: number[];
+    elementGaps: number[];
+    containerPadding: number;
+  };
+}
+```
 
-export interface PixelGenV2Options {
-    baseUrl: string;
-    maxIterations?: number;
-    targetSimilarity?: number;
-    changesPerIteration?: number;
-    device?: 'desktop' | 'mobile';
+### Implementation: Enhanced Prompt Builder
+
+```typescript
+// src/enhanced-prompt-builder.ts
+
+export const buildEnhancedPrompt = (dna: SiteDNA, screenshot: string): string => {
+  return `You are a pixel-perfect React/Tailwind developer. You have been given:
+1. A screenshot of the target website
+2. Extracted DNA data with EXACT values from the site
+
+## CRITICAL: Use the EXACT values from the DNA data below. Do NOT estimate.
+
+## TYPOGRAPHY (Use these exact values)
+${dna.typography.fonts.map(f => `- Font: "${f.family}" (weights: ${f.weights.join(', ')})`).join('\n')}
+
+Text Styles:
+${dna.typography.textStyles.map(s => `- ${s.role}: ${s.fontSize} ${s.fontWeight} ${s.color}`).join('\n')}
+
+## COLOR PALETTE (Use these exact hex codes)
+- Backgrounds: ${dna.colors.backgrounds.join(', ')}
+- Text colors: ${dna.colors.textColors.join(', ')}
+- Accent/buttons: ${dna.colors.palette.filter(c => c.usage === 'accent').map(c => c.hex).join(', ')}
+
+## SECTION STRUCTURE (Follow this EXACT order and structure)
+${dna.layout.sections.map((s, i) => `
+### Section ${i + 1}: ${s.role}
+- Tag: <${s.tag}>
+- data-section="${s.role}"
+- Height: ~${s.rect.height}px
+- Background: ${s.backgroundColor}
+- Padding: ${s.padding.top}px ${s.padding.right}px ${s.padding.bottom}px ${s.padding.left}px
+- Layout: ${s.layoutType}${s.gridInfo ? ` (${s.gridInfo.columns} columns, ${s.gridInfo.gap}px gap)` : ''}
+- Child elements: ${s.childCount}
+${s.headingText ? `- Heading: "${s.headingText}"` : ''}
+`).join('\n')}
+
+## IMAGES (Use these exact local paths)
+${dna.elements.images.map((img, i) => `
+- Image ${i + 1}: src="${img.localPath}"
+  - Section: ${img.sectionIndex + 1}
+  - Size: ${img.rect.width}x${img.rect.height}
+  - Role: ${img.role}
+`).join('\n')}
+
+## BUTTONS (Match these exactly)
+${dna.elements.buttons.map((btn, i) => `
+- Button ${i + 1}: "${btn.text}"
+  - Background: ${btn.style.backgroundColor}
+  - Text: ${btn.style.textColor}
+  - Border radius: ${btn.style.borderRadius}
+  - Padding: ${btn.style.padding}
+`).join('\n')}
+
+## SPACING SYSTEM
+- Base unit: ${dna.spacing.baseUnit}px
+- Section gaps: ${[...new Set(dna.spacing.sectionGaps)].join(', ')}px
+- Element gaps: ${[...new Set(dna.spacing.elementGaps)].join(', ')}px
+
+## REQUIREMENTS
+1. Generate ONE complete React component per section
+2. Use EXACT values from DNA data - do NOT estimate
+3. Add data-section="<role>" to each section root
+4. Use downloaded images from ./assets/ - do NOT use placeholders
+5. Match element counts EXACTLY (if DNA shows 6 cards, generate 6)
+
+## OUTPUT FORMAT
+Return valid JSX code that can run in browser.
+NO import statements (React is global).
+NO export statements.
+Component name should be "App".`;
+};
+```
+
+### Implementation: Section-by-Section Generation
+
+Instead of generating the entire page at once, generate section by section:
+
+```typescript
+// src/section-generator-v2.ts
+
+interface SectionGenerationResult {
+  sectionCode: string;
+  componentName: string;
+  success: boolean;
+  similarity: number;
 }
 
-export const runPixelGenV2 = async (options: PixelGenV2Options) => {
-    const {
-        baseUrl,
-        maxIterations = 20,
-        targetSimilarity = 0.95,
-        changesPerIteration = 5,
-        device = 'desktop'
-    } = options;
-
-    // ========== PHASE 1: Initial Generation ==========
-    console.log('[PixelGen v2] Phase 1: Initial generation...');
-    const { bundle, siteDir, localUrl } = await generateInitialSite(baseUrl);
+export const generateSectionBySection = async (
+  dna: SiteDNA,
+  screenshotPath: string,
+  outputDir: string
+): Promise<string> => {
+  const sectionCodes: string[] = [];
+  
+  for (const section of dna.layout.sections) {
+    console.log(`[SectionGen] Generating section ${section.index + 1}: ${section.role}`);
     
-    // Freeze structure - extract HTML and create CSS architecture
-    const { frozenHtml, baseCss, overridesPath } = await freezeStructure(siteDir);
+    // 1. Crop screenshot to this section
+    const sectionScreenshot = await cropScreenshotToSection(
+      screenshotPath,
+      section.rect
+    );
     
-    // ========== PHASE 2: Extract Ground Truth ==========
-    console.log('[PixelGen v2] Phase 2: Extracting ground truth...');
-    const groundTruth = await extractGroundTruth(baseUrl, device);
-    await saveJson(path.join(siteDir, 'ground-truth.json'), groundTruth);
+    // 2. Get section-specific assets
+    const sectionAssets = dna.elements.images.filter(
+      img => img.sectionIndex === section.index
+    );
+    const sectionButtons = dna.elements.buttons.filter(
+      btn => btn.sectionIndex === section.index
+    );
+    
+    // 3. Build section-specific prompt
+    const sectionPrompt = buildSectionPrompt(
+      section,
+      sectionAssets,
+      sectionButtons,
+      dna.typography,
+      dna.colors
+    );
+    
+    // 4. Generate section code
+    const sectionCode = await llmGenerateSection(
+      sectionPrompt,
+      sectionScreenshot
+    );
+    
+    // 5. Validate section matches
+    const validation = await validateSectionOutput(
+      sectionCode,
+      section,
+      sectionScreenshot
+    );
+    
+    if (validation.similarity < 0.7) {
+      // Retry with more specific feedback
+      const improvedCode = await retryWithFeedback(
+        sectionCode,
+        validation.issues,
+        sectionScreenshot
+      );
+      sectionCodes.push(improvedCode);
+    } else {
+      sectionCodes.push(sectionCode);
+    }
+  }
+  
+  // Combine all sections into final App
+  return combineSections(sectionCodes, dna);
+};
+```
 
-    // ========== ITERATION LOOP ==========
-    let currentSimilarity = 0;
-    let iteration = 0;
-    const appliedChanges: AppliedChange[] = [];
+### Key Changes to Existing Files
 
-    while (iteration < maxIterations && currentSimilarity < targetSimilarity) {
-        console.log(`[PixelGen v2] Iteration ${iteration}...`);
+#### 1. Update `src/structure-aware-generator.ts`
 
-        // ========== PHASE 2 (per iteration): Extract Current State ==========
-        const currentState = await extractCurrentState(localUrl, device);
-        await saveJson(path.join(siteDir, `iteration-${iteration}`, 'current-state.json'), currentState);
+Add DNA extraction before generation:
 
-        // ========== PHASE 3: Compute Structured Diff ==========
-        const diff = computeStructuredDiff(groundTruth, currentState);
-        await saveJson(path.join(siteDir, `iteration-${iteration}`, 'diff.json'), diff);
+```typescript
+export const generateInitialSiteWithStructure = async (
+  baseUrl: string,
+  extractAssets: boolean = true,
+  routeMap?: Record<string, string>
+): Promise<GenerationResult> => {
+  
+  // NEW: Extract site DNA first
+  const dna = await extractSiteDNA(baseUrl);
+  await saveSiteDNA(dna, outputDir);
+  
+  // NEW: Download all assets with position info
+  const assets = await downloadAssetsWithMetadata(dna.elements.images, outputDir);
+  
+  // NEW: Build enhanced prompt with DNA
+  const prompt = buildEnhancedPrompt(dna, screenshotBase64);
+  
+  // Generate with enhanced prompt
+  const code = await generateWithModel(prompt, screenshotBase64);
+  
+  // Validate structure matches DNA
+  const structureMatch = validateStructureAgainstDNA(code, dna);
+  
+  return {
+    siteDir,
+    localUrl,
+    entryPath,
+    structureMatchRate: structureMatch.rate,
+    dna
+  };
+};
+```
 
-        if (diff.changes.length === 0) {
-            console.log('[PixelGen v2] No differences found. Converged!');
+#### 2. Create `src/site-dna-extractor.ts`
+
+```typescript
+import { chromium, Page } from 'playwright';
+
+export const extractSiteDNA = async (url: string): Promise<SiteDNA> => {
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(url, { waitUntil: 'networkidle' });
+  
+  // Extract all DNA in one page.evaluate call for efficiency
+  const dna = await page.evaluate(() => {
+    // ... comprehensive extraction logic
+    // See full implementation below
+  });
+  
+  await browser.close();
+  return dna;
+};
+```
+
+---
+
+## GOAL 2: Improve Iteration Accuracy (10% → 30%+)
+
+### Root Cause Analysis
+
+Your current iteration system has several issues:
+
+1. **Element Matching Flaw**: You identified that `data-section` attributes only exist on generated sites, causing 86% match failure
+2. **Too Many Changes**: Trying to fix all differences at once overwhelms the LLM
+3. **Lack of Validation**: No per-change validation to prevent regressions
+4. **CSS Selector Issues**: Modern frameworks use arbitrary values that break selectors
+
+### Solution: Surgical CSS Patching with Validation
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    IMPROVED ITERATION PIPELINE                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  1. VISUAL DIFF        2. PRIORITIZE        3. PATCH            4. VALIDATE
+│  ┌──────────────┐      ┌──────────────┐    ┌──────────────┐    ┌──────────┐
+│  │Position-Based│─────▶│ Impact       │───▶│ Single CSS   │───▶│Per-Change│
+│  │  Matching    │      │ Scoring      │    │ Change       │    │Similarity│
+│  └──────────────┘      └──────────────┘    └──────────────┘    └──────────┘
+│       │                      │                    │                  │
+│       ▼                      ▼                    ▼                  ▼
+│  • Match by visual       • Rank by            • Apply ONE         • Accept if
+│    coordinates             pixel impact         change at           improves
+│  • Tag type + size       • Group by           • time              • Rollback
+│  • Section containment     category           • CSS override        if regress
+│  • No reliance on        • Take top 3          file only
+│    generated attrs
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Implementation: Position-Based Element Matching
+
+```typescript
+// src/ground-truth/position-matcher.ts
+
+interface VisualElement {
+  rect: { x: number; y: number; width: number; height: number };
+  tag: string;
+  styles: Record<string, string>;
+  sectionIndex: number;
+  textContent?: string;
+}
+
+interface MatchResult {
+  baseElement: VisualElement;
+  targetElement: VisualElement;
+  confidence: number;  // 0-1
+  matchType: 'exact' | 'fuzzy' | 'inferred';
+}
+
+export const matchByPosition = (
+  baseElements: VisualElement[],
+  targetElements: VisualElement[]
+): MatchResult[] => {
+  const matches: MatchResult[] = [];
+  const usedTargets = new Set<number>();
+  
+  for (const base of baseElements) {
+    let bestMatch: { target: VisualElement; score: number; index: number } | null = null;
+    
+    for (let i = 0; i < targetElements.length; i++) {
+      if (usedTargets.has(i)) continue;
+      
+      const target = targetElements[i];
+      const score = calculateMatchScore(base, target);
+      
+      if (score > 0.7 && (!bestMatch || score > bestMatch.score)) {
+        bestMatch = { target, score, index: i };
+      }
+    }
+    
+    if (bestMatch) {
+      usedTargets.add(bestMatch.index);
+      matches.push({
+        baseElement: base,
+        targetElement: bestMatch.target,
+        confidence: bestMatch.score,
+        matchType: bestMatch.score > 0.95 ? 'exact' : bestMatch.score > 0.8 ? 'fuzzy' : 'inferred'
+      });
+    }
+  }
+  
+  return matches;
+};
+
+const calculateMatchScore = (base: VisualElement, target: VisualElement): number => {
+  let score = 0;
+  
+  // 1. Position similarity (40% weight)
+  const centerDistanceX = Math.abs((base.rect.x + base.rect.width/2) - (target.rect.x + target.rect.width/2));
+  const centerDistanceY = Math.abs((base.rect.y + base.rect.height/2) - (target.rect.y + target.rect.height/2));
+  const maxDistance = 100; // pixels
+  const positionScore = Math.max(0, 1 - (centerDistanceX + centerDistanceY) / (maxDistance * 2));
+  score += positionScore * 0.4;
+  
+  // 2. Size similarity (30% weight)
+  const widthRatio = Math.min(base.rect.width, target.rect.width) / Math.max(base.rect.width, target.rect.width);
+  const heightRatio = Math.min(base.rect.height, target.rect.height) / Math.max(base.rect.height, target.rect.height);
+  score += (widthRatio * heightRatio) * 0.3;
+  
+  // 3. Tag match (20% weight)
+  if (base.tag === target.tag) {
+    score += 0.2;
+  } else if (isCompatibleTag(base.tag, target.tag)) {
+    score += 0.1;
+  }
+  
+  // 4. Section containment (10% weight)
+  if (base.sectionIndex === target.sectionIndex) {
+    score += 0.1;
+  }
+  
+  return score;
+};
+
+const isCompatibleTag = (tag1: string, tag2: string): boolean => {
+  const compatibleGroups = [
+    ['div', 'section', 'article', 'main'],
+    ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+    ['p', 'span', 'div'],
+    ['button', 'a'],
+    ['img', 'picture', 'figure'],
+    ['ul', 'ol', 'div'],
+    ['li', 'div']
+  ];
+  
+  return compatibleGroups.some(group => 
+    group.includes(tag1.toLowerCase()) && group.includes(tag2.toLowerCase())
+  );
+};
+```
+
+### Implementation: Impact-Scored CSS Changes
+
+```typescript
+// src/css-impact-scorer.ts
+
+interface ScoredChange {
+  change: StyleChange;
+  impactScore: number;  // Higher = more visual impact
+  pixelImpact: number;  // Estimated pixels affected
+  category: 'critical' | 'high' | 'medium' | 'low';
+}
+
+export const scoreAndPrioritizeChanges = (
+  changes: StyleChange[],
+  screenDimensions: { width: number; height: number }
+): ScoredChange[] => {
+  const scored = changes.map(change => {
+    let impactScore = 0;
+    
+    // 1. Property impact weights
+    const propertyWeights: Record<string, number> = {
+      // Critical - affects layout
+      'display': 100,
+      'position': 90,
+      'width': 85,
+      'height': 85,
+      'flex-direction': 80,
+      'grid-template-columns': 80,
+      
+      // High - affects spacing
+      'margin': 70,
+      'padding': 70,
+      'gap': 70,
+      'top': 65,
+      'left': 65,
+      'right': 65,
+      'bottom': 65,
+      
+      // Medium - affects appearance
+      'background-color': 50,
+      'color': 50,
+      'font-size': 45,
+      'font-weight': 40,
+      'border-radius': 30,
+      'box-shadow': 30,
+      
+      // Low - minor tweaks
+      'line-height': 20,
+      'letter-spacing': 15,
+      'opacity': 15,
+      'transform': 10
+    };
+    
+    const propWeight = propertyWeights[change.property] || 25;
+    impactScore += propWeight;
+    
+    // 2. Element size impact
+    const elementArea = change.rect.width * change.rect.height;
+    const screenArea = screenDimensions.width * screenDimensions.height;
+    const sizeMultiplier = 1 + (elementArea / screenArea) * 2;
+    impactScore *= sizeMultiplier;
+    
+    // 3. Value difference magnitude
+    const valueDiff = calculateValueDifference(change.expected, change.actual);
+    impactScore *= (1 + valueDiff);
+    
+    // Estimate pixel impact
+    const pixelImpact = estimatePixelImpact(change, elementArea);
+    
+    return {
+      change,
+      impactScore,
+      pixelImpact,
+      category: impactScore > 150 ? 'critical' : 
+                impactScore > 100 ? 'high' : 
+                impactScore > 50 ? 'medium' : 'low'
+    };
+  });
+  
+  // Sort by impact score descending
+  return scored.sort((a, b) => b.impactScore - a.impactScore);
+};
+
+const calculateValueDifference = (expected: string, actual: string): number => {
+  const expNum = parseFloat(expected);
+  const actNum = parseFloat(actual);
+  
+  if (!isNaN(expNum) && !isNaN(actNum)) {
+    if (expNum === 0) return actNum === 0 ? 0 : 1;
+    return Math.min(Math.abs(expNum - actNum) / Math.abs(expNum), 2);
+  }
+  
+  // Color difference
+  if (expected.startsWith('#') && actual.startsWith('#')) {
+    return colorDifference(expected, actual);
+  }
+  
+  return expected === actual ? 0 : 0.5;
+};
+```
+
+### Implementation: Single-Change-at-a-Time Patching
+
+```typescript
+// src/surgical-patcher.ts
+
+interface PatchResult {
+  success: boolean;
+  similarityBefore: number;
+  similarityAfter: number;
+  improvement: number;
+  appliedChange: ScoredChange | null;
+}
+
+export const applySurgicalPatches = async (
+  siteDir: string,
+  localUrl: string,
+  baseUrl: string,
+  scoredChanges: ScoredChange[],
+  maxChangesPerIteration: number = 3
+): Promise<PatchResult[]> => {
+  const results: PatchResult[] = [];
+  const overridesPath = path.join(siteDir, 'site', 'overrides.css');
+  
+  // Start with current state
+  let currentOverrides = await fs.readFile(overridesPath, 'utf-8').catch(() => '');
+  let currentSimilarity = await measureSimilarity(baseUrl, localUrl);
+  
+  // Take only top N changes by impact
+  const topChanges = scoredChanges.slice(0, maxChangesPerIteration);
+  
+  for (const scoredChange of topChanges) {
+    const { change } = scoredChange;
+    
+    // 1. Create CSS rule for this single change
+    const cssRule = generateCSSRule(change);
+    
+    // 2. Backup current state
+    const backup = currentOverrides;
+    
+    // 3. Apply change
+    currentOverrides = appendCSSRule(currentOverrides, cssRule);
+    await fs.writeFile(overridesPath, currentOverrides);
+    
+    // 4. Wait for render
+    await new Promise(r => setTimeout(r, 300));
+    
+    // 5. Measure new similarity
+    const newSimilarity = await measureSimilarity(baseUrl, localUrl);
+    const improvement = newSimilarity - currentSimilarity;
+    
+    console.log(`[SurgicalPatch] ${change.property}: ${currentSimilarity.toFixed(3)} → ${newSimilarity.toFixed(3)} (${improvement >= 0 ? '+' : ''}${(improvement * 100).toFixed(2)}%)`);
+    
+    if (improvement < -0.002) {
+      // REGRESSION: Rollback
+      console.log(`[SurgicalPatch] ⚠ Regression! Rolling back...`);
+      currentOverrides = backup;
+      await fs.writeFile(overridesPath, currentOverrides);
+      
+      results.push({
+        success: false,
+        similarityBefore: currentSimilarity,
+        similarityAfter: currentSimilarity,
+        improvement: 0,
+        appliedChange: null
+      });
+    } else {
+      // IMPROVEMENT or neutral: Keep
+      results.push({
+        success: true,
+        similarityBefore: currentSimilarity,
+        similarityAfter: newSimilarity,
+        improvement,
+        appliedChange: scoredChange
+      });
+      currentSimilarity = newSimilarity;
+    }
+  }
+  
+  return results;
+};
+
+const generateCSSRule = (change: StyleChange): string => {
+  // Use the most specific selector possible
+  const selector = change.cssSelector || `[data-section="${change.section}"] ${change.tag}`;
+  
+  return `
+/* Change: ${change.property} from "${change.actual}" to "${change.expected}" */
+${selector} {
+  ${change.property}: ${change.expected} !important;
+}`;
+};
+```
+
+### Implementation: LLM-Assisted Complex Fixes
+
+For changes that can't be done with simple CSS overrides:
+
+```typescript
+// src/llm-css-refiner.ts (enhanced)
+
+export const llmGenerateComplexFix = async (
+  currentCode: string,
+  issues: ScoredChange[],
+  screenshotBase64: string,
+  targetScreenshotBase64: string
+): Promise<string> => {
+  const prompt = `You are fixing specific visual issues in React/Tailwind code.
+
+## CURRENT CODE
+\`\`\`jsx
+${currentCode}
+\`\`\`
+
+## ISSUES TO FIX (In order of priority)
+${issues.slice(0, 3).map((issue, i) => `
+${i + 1}. Element: ${issue.change.tag} in section "${issue.change.section}"
+   Property: ${issue.change.property}
+   Current: ${issue.change.actual}
+   Expected: ${issue.change.expected}
+   Impact: ${issue.category}
+`).join('\n')}
+
+## CRITICAL RULES
+1. Fix ONLY the listed issues - do NOT change anything else
+2. Keep all working code EXACTLY as is
+3. Make minimal changes to achieve the fix
+4. If unsure, prefer adding/modifying Tailwind classes over restructuring
+
+## OUTPUT
+Return ONLY the fixed code. No explanations.`;
+
+  const response = await geminiGenerate(prompt, [
+    { type: 'image', data: screenshotBase64, label: 'target' },
+    { type: 'image', data: targetScreenshotBase64, label: 'current' }
+  ]);
+  
+  return extractCodeFromResponse(response);
+};
+```
+
+---
+
+## GOAL 3: Improve Multi-Page Builder Accuracy
+
+### Root Cause Analysis
+
+Current multi-page issues:
+1. Shared component detection is based on section names, not visual comparison
+2. Link rewriting misses dynamic/JS-based navigation
+3. Page consistency varies because each page is generated independently
+4. No visual anchor points between pages
+
+### Solution: Visual Consistency System
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    IMPROVED MULTI-PAGE PIPELINE                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  1. DISCOVER         2. ANALYZE           3. GENERATE         4. UNIFY
+│  ┌──────────────┐   ┌──────────────┐    ┌──────────────┐    ┌──────────┐
+│  │ Crawl +      │──▶│ Visual       │───▶│ Shared-First │───▶│ Consistent│
+│  │ Screenshot   │   │ Clustering   │    │ Generation   │    │ Styling   │
+│  └──────────────┘   └──────────────┘    └──────────────┘    └──────────┘
+│       │                   │                   │                   │
+│       ▼                   ▼                   ▼                   ▼
+│  • All pages          • Group visually     • Generate header   • Extract CSS
+│    screenshotted        similar sections     /footer ONCE        variables
+│  • DOM extracted      • Identify shared    • Inject into all   • Unify font
+│  • Links collected      header/footer        pages               imports
+│                       • Detect variations  • Generate unique   • Fix link
+│                                              content only        targets
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Implementation: Visual Shared Component Detection
+
+```typescript
+// src/visual-shared-detector.ts
+
+interface PageScreenshot {
+  path: string;
+  url: string;
+  screenshotPath: string;
+  sections: Array<{
+    rect: { x: number; y: number; width: number; height: number };
+    screenshotCrop: string;  // Base64 of cropped section
+    hash: string;  // Perceptual hash for comparison
+  }>;
+}
+
+interface SharedRegion {
+  type: 'header' | 'footer' | 'nav' | 'sidebar';
+  rect: { x: number; y: number; width: number; height: number };
+  confidence: number;
+  pages: string[];  // Which pages have this region
+  templatePage: string;  // Best page to use as template
+}
+
+export const detectSharedComponents = async (
+  pageScreenshots: PageScreenshot[]
+): Promise<SharedRegion[]> => {
+  const sharedRegions: SharedRegion[] = [];
+  
+  // 1. Analyze header region (top 200px)
+  const headerRegion = await analyzeRegionAcrossPages(
+    pageScreenshots,
+    { y: 0, height: 200 },
+    'header'
+  );
+  if (headerRegion.confidence > 0.8) {
+    sharedRegions.push(headerRegion);
+  }
+  
+  // 2. Analyze footer region (bottom 300px)
+  const footerRegion = await analyzeRegionAcrossPages(
+    pageScreenshots,
+    { y: -300, height: 300 },
+    'footer'
+  );
+  if (footerRegion.confidence > 0.8) {
+    sharedRegions.push(footerRegion);
+  }
+  
+  // 3. Analyze sidebar (if any page has consistent left/right region)
+  const sidebarRegion = await detectSidebar(pageScreenshots);
+  if (sidebarRegion) {
+    sharedRegions.push(sidebarRegion);
+  }
+  
+  return sharedRegions;
+};
+
+const analyzeRegionAcrossPages = async (
+  pages: PageScreenshot[],
+  regionSpec: { y: number; height: number },
+  type: 'header' | 'footer'
+): Promise<SharedRegion> => {
+  const regionCrops: Array<{ page: string; crop: Buffer; hash: string }> = [];
+  
+  for (const page of pages) {
+    const crop = await cropRegion(page.screenshotPath, regionSpec);
+    const hash = await perceptualHash(crop);
+    regionCrops.push({ page: page.path, crop, hash });
+  }
+  
+  // Compare hashes - if most pages have similar hash, it's shared
+  const hashGroups = groupByHashSimilarity(regionCrops, 0.9);
+  const largestGroup = hashGroups.sort((a, b) => b.length - a.length)[0];
+  
+  const confidence = largestGroup.length / pages.length;
+  
+  return {
+    type,
+    rect: calculateRegionRect(regionSpec, pages[0]),
+    confidence,
+    pages: largestGroup.map(r => r.page),
+    templatePage: largestGroup[0].page  // First in group is template
+  };
+};
+```
+
+### Implementation: Shared-First Generation
+
+```typescript
+// src/shared-first-generator.ts
+
+export const generateMultiPageSite = async (
+  entryUrl: string,
+  options: MultiPageOptions
+): Promise<MultiPageResult> => {
+  
+  // 1. Discover and screenshot all pages
+  const pageData = await discoverAndScreenshotPages(entryUrl, options);
+  
+  // 2. Detect shared components visually
+  const sharedRegions = await detectSharedComponents(pageData);
+  
+  // 3. Generate shared components ONCE from best template
+  const sharedComponents: Record<string, string> = {};
+  
+  for (const region of sharedRegions) {
+    console.log(`[MultiPage] Generating ${region.type} from ${region.templatePage}`);
+    
+    const templatePage = pageData.find(p => p.path === region.templatePage)!;
+    const regionScreenshot = await cropRegion(
+      templatePage.screenshotPath,
+      region.rect
+    );
+    
+    const componentCode = await generateComponent(
+      region.type,
+      regionScreenshot,
+      templatePage.dna
+    );
+    
+    sharedComponents[region.type] = componentCode;
+  }
+  
+  // 4. Generate unique content for each page
+  const pageResults: PageGenerationResult[] = [];
+  
+  for (const page of pageData) {
+    console.log(`[MultiPage] Generating unique content for ${page.path}`);
+    
+    // Mask out shared regions from screenshot
+    const uniqueScreenshot = await maskSharedRegions(
+      page.screenshotPath,
+      sharedRegions
+    );
+    
+    // Generate only unique sections
+    const uniqueCode = await generateUniqueContent(
+      uniqueScreenshot,
+      page.dna,
+      sharedRegions
+    );
+    
+    // Compose full page from shared + unique
+    const fullPageCode = composePageFromParts(
+      sharedComponents,
+      uniqueCode,
+      page.path
+    );
+    
+    pageResults.push({
+      path: page.path,
+      code: fullPageCode
+    });
+  }
+  
+  // 5. Unify styling across all pages
+  const unifiedCSS = extractUnifiedStyles(pageResults);
+  
+  // 6. Fix all navigation links
+  const routeRegistry = buildRouteRegistry(pageData);
+  for (const page of pageResults) {
+    page.code = rewriteNavigationLinks(page.code, routeRegistry);
+  }
+  
+  return {
+    pages: pageResults,
+    sharedComponents,
+    unifiedCSS,
+    routeRegistry
+  };
+};
+```
+
+### Implementation: Link Rewriting Improvements
+
+```typescript
+// src/enhanced-link-rewriter.ts
+
+interface LinkRewriteConfig {
+  // What to do with external links
+  externalBehavior: 'keep' | 'disable' | 'placeholder';
+  
+  // What to do with unmatched internal links
+  unmatchedBehavior: 'best-match' | 'placeholder' | 'disable';
+  
+  // Navigation patterns to detect
+  patterns: {
+    mainNav: string[];     // e.g., ['header nav a', '[data-section="header"] a']
+    footerNav: string[];   // e.g., ['footer a', '[data-section="footer"] a']
+    breadcrumb: string[];  // e.g., ['.breadcrumb a', 'nav[aria-label="breadcrumb"] a']
+    ctaButtons: string[];  // e.g., ['a.btn', 'a.button']
+  };
+}
+
+export const rewriteAllLinks = async (
+  code: string,
+  routeRegistry: RouteRegistry,
+  config: LinkRewriteConfig
+): Promise<string> => {
+  
+  // 1. Parse code to find all link targets
+  const linkMatches = findAllLinks(code);
+  
+  const rewrites: Array<{ original: string; replacement: string }> = [];
+  
+  for (const link of linkMatches) {
+    const { href, context } = link;
+    
+    // 2. Classify link type
+    const isExternal = isExternalUrl(href, routeRegistry.baseOrigin);
+    const isAnchor = href.startsWith('#');
+    const isInternal = !isExternal && !isAnchor;
+    
+    if (isExternal) {
+      // Handle external links
+      switch (config.externalBehavior) {
+        case 'keep':
+          continue;
+        case 'disable':
+          rewrites.push({ original: href, replacement: '#' });
+          break;
+        case 'placeholder':
+          rewrites.push({ original: href, replacement: '/external-link-placeholder' });
+          break;
+      }
+    } else if (isInternal) {
+      // Try to match to a generated route
+      const matchedRoute = routeRegistry.matchUrl(href);
+      
+      if (matchedRoute) {
+        rewrites.push({ original: href, replacement: matchedRoute.route });
+      } else {
+        // Handle unmatched internal links
+        switch (config.unmatchedBehavior) {
+          case 'best-match':
+            const bestMatch = routeRegistry.findBestMatch(href);
+            if (bestMatch) {
+              rewrites.push({ original: href, replacement: bestMatch.route });
+            }
+            break;
+          case 'placeholder':
+            rewrites.push({ original: href, replacement: '/page-not-generated' });
+            break;
+          case 'disable':
+            rewrites.push({ original: href, replacement: '#' });
             break;
         }
-
-        // ========== PHASE 4: Prioritize Changes ==========
-        const prioritized = prioritizeChanges(diff.changes, changesPerIteration);
-        console.log(`[PixelGen v2] Applying ${prioritized.length} changes...`);
-
-        // ========== PHASE 5: Apply Deterministic Patches ==========
-        for (const change of prioritized) {
-            const patchResult = await applyCSSPatches(overridesPath, [change]);
-            
-            // ========== PHASE 6: Validate Each Change ==========
-            const validation = await validateChanges(localUrl, [change], device);
-            
-            if (validation.regressions.length > 0) {
-                console.warn(`[PixelGen v2] Regression detected for ${change.selector}.${change.property}, rolling back...`);
-                await rollbackChange(overridesPath, change);
-            } else {
-                appliedChanges.push({ ...change, iteration });
-                console.log(`[PixelGen v2] ✓ Applied: ${change.selector} { ${change.property}: ${change.expected} }`);
-            }
-        }
-
-        // Compute new similarity
-        currentSimilarity = await computeSimilarity(baseUrl, localUrl, device);
-        console.log(`[PixelGen v2] Iteration ${iteration} complete. Similarity: ${(currentSimilarity * 100).toFixed(2)}%`);
-
-        iteration++;
+      }
     }
-
-    return {
-        finalSimilarity: currentSimilarity,
-        iterations: iteration,
-        appliedChanges,
-        localUrl
-    };
-};
-```
-
----
-
-## Phase 2: Ground Truth Extraction
-
-### File: `src/ground-truth/types.ts`
-
-```typescript
-// src/ground-truth/types.ts
-
-export interface ElementStyle {
-    // Stable identifier for matching between base and generated
-    stableSelector: string;
-    
-    // Original CSS selector (for applying fixes)
-    cssSelector: string;
-    
-    // Element metadata
-    tag: string;
-    text?: string;
-    section?: string;
-    
-    // Bounding box (for prioritization)
-    rect: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    };
-    
-    // Computed styles (the ground truth)
-    styles: Record<string, string>;
-}
-
-export interface GroundTruth {
-    url: string;
-    device: 'desktop' | 'mobile';
-    viewport: { width: number; height: number };
-    extractedAt: string;
-    elements: Map<string, ElementStyle>; // keyed by stableSelector
-}
-
-export interface StyleChange {
-    stableSelector: string;
-    cssSelector: string;
-    property: string;
-    expected: string;  // from ground truth (base site)
-    actual: string;    // from current state (generated site)
-    
-    // Metadata for prioritization
-    section?: string;
-    tag: string;
-    rect: { x: number; y: number; width: number; height: number };
-    
-    // Computed priority (higher = more important)
-    priority: number;
-    category: 'layout' | 'spacing' | 'typography' | 'color' | 'effects';
-}
-
-export interface StructuredDiff {
-    baseUrl: string;
-    targetUrl: string;
-    device: 'desktop' | 'mobile';
-    timestamp: string;
-    changes: StyleChange[];
-    summary: {
-        totalDifferences: number;
-        byCategory: Record<string, number>;
-        bySection: Record<string, number>;
-    };
-}
-
-export interface AppliedChange extends StyleChange {
-    iteration: number;
-    appliedAt: string;
-}
-```
-
-### File: `src/ground-truth/extractor.ts`
-
-```typescript
-// src/ground-truth/extractor.ts
-
-import { chromium, Page } from 'playwright';
-import { ElementStyle, GroundTruth } from './types';
-
-const VIEWPORTS = {
-    desktop: { width: 1440, height: 900 },
-    mobile: { width: 390, height: 844 }
-};
-
-// CSS properties we care about for visual matching
-const STYLE_PROPERTIES = [
-    // Layout
-    'display', 'position', 'top', 'right', 'bottom', 'left', 'z-index',
-    'width', 'height', 'min-width', 'max-width', 'min-height', 'max-height',
-    'flex-direction', 'flex-wrap', 'justify-content', 'align-items', 'gap',
-    'grid-template-columns', 'grid-template-rows',
-    
-    // Spacing
-    'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
-    'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
-    
-    // Typography
-    'font-family', 'font-size', 'font-weight', 'line-height',
-    'letter-spacing', 'text-align', 'text-transform', 'text-decoration',
-    
-    // Colors
-    'color', 'background-color', 'border-color',
-    
-    // Borders
-    'border-width', 'border-style', 'border-radius',
-    
-    // Effects
-    'opacity', 'box-shadow', 'transform'
-];
-
-/**
- * Generate a stable selector that can match elements across base and generated sites.
- * 
- * Strategy:
- * 1. If element has data-section, use it as anchor
- * 2. Use semantic hierarchy: section > heading level > tag + position
- * 3. Include text content hash for disambiguation
- */
-const generateStableSelector = (el: Element, ancestors: Element[]): string => {
-    const parts: string[] = [];
-    
-    // Find nearest section anchor
-    const sectionAncestor = ancestors.find(a => 
-        a.hasAttribute('data-section') || 
-        ['HEADER', 'FOOTER', 'NAV', 'MAIN', 'SECTION', 'ARTICLE'].includes(a.tagName)
+  }
+  
+  // 3. Apply all rewrites
+  let rewrittenCode = code;
+  for (const rewrite of rewrites) {
+    // Use regex to match href attributes
+    const hrefPattern = new RegExp(
+      `href=["']${escapeRegex(rewrite.original)}["']`,
+      'g'
     );
-    
-    if (sectionAncestor) {
-        const sectionName = sectionAncestor.getAttribute('data-section') || 
-                           sectionAncestor.tagName.toLowerCase();
-        parts.push(`[section:${sectionName}]`);
-    }
-    
-    // Add semantic tag path
-    const semanticPath = ancestors
-        .filter(a => ['HEADER', 'NAV', 'MAIN', 'SECTION', 'ARTICLE', 'ASIDE', 'FOOTER'].includes(a.tagName))
-        .map(a => a.tagName.toLowerCase())
-        .join('/');
-    if (semanticPath) {
-        parts.push(`[path:${semanticPath}]`);
-    }
-    
-    // Add element info
-    parts.push(`[tag:${el.tagName.toLowerCase()}]`);
-    
-    // Add text content hash (first 50 chars)
-    const text = (el.textContent || '').trim().slice(0, 50);
-    if (text) {
-        const textHash = simpleHash(text);
-        parts.push(`[text:${textHash}]`);
-    }
-    
-    // Add position among siblings of same type
-    const parent = el.parentElement;
-    if (parent) {
-        const siblings = Array.from(parent.children).filter(c => c.tagName === el.tagName);
-        if (siblings.length > 1) {
-            const index = siblings.indexOf(el);
-            parts.push(`[nth:${index}]`);
-        }
-    }
-    
-    return parts.join('');
-};
-
-const simpleHash = (str: string): string => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return Math.abs(hash).toString(36).slice(0, 8);
-};
-
-/**
- * Generate a CSS selector that can be used to apply styles.
- * This should be specific enough to target the element but not brittle.
- */
-const generateCSSSelector = (el: Element): string => {
-    // Priority 1: ID
-    if (el.id) {
-        return `#${CSS.escape(el.id)}`;
-    }
-    
-    // Priority 2: data-section + tag + nth-of-type
-    const section = el.closest('[data-section]');
-    if (section) {
-        const sectionName = section.getAttribute('data-section');
-        const parent = el.parentElement;
-        if (parent) {
-            const siblings = Array.from(parent.children).filter(c => c.tagName === el.tagName);
-            const nth = siblings.indexOf(el) + 1;
-            return `[data-section="${sectionName}"] ${el.tagName.toLowerCase()}:nth-of-type(${nth})`;
-        }
-    }
-    
-    // Priority 3: Class-based selector
-    if (el.className && typeof el.className === 'string') {
-        const classes = el.className.split(/\s+/).filter(c => 
-            c && !c.startsWith('_') && !c.match(/^[a-z]{6,}$/) // Filter CSS modules hashes
-        );
-        if (classes.length > 0) {
-            return `${el.tagName.toLowerCase()}.${classes.slice(0, 2).join('.')}`;
-        }
-    }
-    
-    // Fallback: tag + nth-child path
-    const path: string[] = [];
-    let current: Element | null = el;
-    while (current && current !== document.body) {
-        const parent = current.parentElement;
-        if (parent) {
-            const index = Array.from(parent.children).indexOf(current) + 1;
-            path.unshift(`${current.tagName.toLowerCase()}:nth-child(${index})`);
-        }
-        current = parent;
-    }
-    return path.slice(-3).join(' > '); // Last 3 levels only
-};
-
-export const extractGroundTruth = async (
-    url: string, 
-    device: 'desktop' | 'mobile' = 'desktop'
-): Promise<GroundTruth> => {
-    const browser = await chromium.launch({ headless: true });
-    const viewport = VIEWPORTS[device];
-    const context = await browser.newContext({ viewport });
-    const page = await context.newPage();
-    
-    await page.goto(url, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(1000); // Let animations settle
-    
-    const elements = await page.evaluate((styleProps) => {
-        const results: any[] = [];
-        
-        const processElement = (el: Element, ancestors: Element[] = []) => {
-            // Skip invisible elements
-            const style = window.getComputedStyle(el);
-            if (style.display === 'none' || style.visibility === 'hidden') {
-                return;
-            }
-            
-            const rect = el.getBoundingClientRect();
-            // Skip elements with no dimensions (unless they're containers)
-            if (rect.width === 0 && rect.height === 0 && el.children.length === 0) {
-                return;
-            }
-            
-            // Skip script/style/meta elements
-            if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'META', 'LINK'].includes(el.tagName)) {
-                return;
-            }
-            
-            // Extract computed styles
-            const styles: Record<string, string> = {};
-            for (const prop of styleProps) {
-                styles[prop] = style.getPropertyValue(prop);
-            }
-            
-            // Get section context
-            const sectionEl = el.closest('[data-section]') || 
-                             el.closest('header, footer, nav, main, section, article');
-            const section = sectionEl?.getAttribute('data-section') || 
-                           sectionEl?.tagName.toLowerCase();
-            
-            // Generate selectors (done in browser context)
-            const stableSelector = generateStableSelector(el, ancestors);
-            const cssSelector = generateCSSSelector(el);
-            
-            results.push({
-                stableSelector,
-                cssSelector,
-                tag: el.tagName.toLowerCase(),
-                text: (el.textContent || '').trim().slice(0, 100),
-                section,
-                rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-                styles
-            });
-            
-            // Process children
-            for (const child of Array.from(el.children)) {
-                processElement(child, [...ancestors, el]);
-            }
-        };
-        
-        // Helper functions need to be defined inside evaluate
-        const generateStableSelector = (el: Element, ancestors: Element[]): string => {
-            // ... (same implementation as above, but inline)
-            const parts: string[] = [];
-            const sectionAncestor = ancestors.find(a => 
-                a.hasAttribute('data-section') || 
-                ['HEADER', 'FOOTER', 'NAV', 'MAIN', 'SECTION', 'ARTICLE'].includes(a.tagName)
-            );
-            if (sectionAncestor) {
-                const sectionName = sectionAncestor.getAttribute('data-section') || 
-                                   sectionAncestor.tagName.toLowerCase();
-                parts.push(`[section:${sectionName}]`);
-            }
-            parts.push(`[tag:${el.tagName.toLowerCase()}]`);
-            const text = (el.textContent || '').trim().slice(0, 50);
-            if (text) {
-                let hash = 0;
-                for (let i = 0; i < text.length; i++) {
-                    hash = ((hash << 5) - hash) + text.charCodeAt(i);
-                    hash = hash & hash;
-                }
-                parts.push(`[text:${Math.abs(hash).toString(36).slice(0, 8)}]`);
-            }
-            const parent = el.parentElement;
-            if (parent) {
-                const siblings = Array.from(parent.children).filter(c => c.tagName === el.tagName);
-                if (siblings.length > 1) {
-                    parts.push(`[nth:${siblings.indexOf(el)}]`);
-                }
-            }
-            return parts.join('');
-        };
-        
-        const generateCSSSelector = (el: Element): string => {
-            if (el.id) return `#${el.id}`;
-            const section = el.closest('[data-section]');
-            if (section) {
-                const sectionName = section.getAttribute('data-section');
-                const parent = el.parentElement;
-                if (parent) {
-                    const siblings = Array.from(parent.children).filter(c => c.tagName === el.tagName);
-                    const nth = siblings.indexOf(el) + 1;
-                    return `[data-section="${sectionName}"] ${el.tagName.toLowerCase()}:nth-of-type(${nth})`;
-                }
-            }
-            if (el.className && typeof el.className === 'string') {
-                const classes = el.className.split(/\s+/).filter(c => c && !c.startsWith('_'));
-                if (classes.length > 0) {
-                    return `${el.tagName.toLowerCase()}.${classes.slice(0, 2).join('.')}`;
-                }
-            }
-            return el.tagName.toLowerCase();
-        };
-        
-        processElement(document.body);
-        return results;
-    }, STYLE_PROPERTIES);
-    
-    await browser.close();
-    
-    const elementMap = new Map<string, ElementStyle>();
-    for (const el of elements) {
-        elementMap.set(el.stableSelector, el);
-    }
-    
-    return {
-        url,
-        device,
-        viewport,
-        extractedAt: new Date().toISOString(),
-        elements: elementMap
-    };
-};
-
-export const extractCurrentState = extractGroundTruth; // Same function, different URL
-```
-
----
-
-## Phase 3: Structured Diff Computation
-
-### File: `src/ground-truth/differ.ts`
-
-```typescript
-// src/ground-truth/differ.ts
-
-import { GroundTruth, StyleChange, StructuredDiff } from './types';
-
-const categorizeProperty = (prop: string): StyleChange['category'] => {
-    if (['display', 'position', 'top', 'right', 'bottom', 'left', 'z-index', 
-         'width', 'height', 'min-width', 'max-width', 'min-height', 'max-height',
-         'flex-direction', 'justify-content', 'align-items', 'gap',
-         'grid-template-columns', 'grid-template-rows'].includes(prop)) {
-        return 'layout';
-    }
-    if (['margin-top', 'margin-right', 'margin-bottom', 'margin-left',
-         'padding-top', 'padding-right', 'padding-bottom', 'padding-left'].includes(prop)) {
-        return 'spacing';
-    }
-    if (['font-family', 'font-size', 'font-weight', 'line-height',
-         'letter-spacing', 'text-align', 'text-transform', 'text-decoration'].includes(prop)) {
-        return 'typography';
-    }
-    if (['color', 'background-color', 'border-color'].includes(prop)) {
-        return 'color';
-    }
-    return 'effects';
-};
-
-const isSignificantDifference = (prop: string, expected: string, actual: string): boolean => {
-    // Skip if identical
-    if (expected === actual) return false;
-    
-    // Normalize and compare
-    const normalizeValue = (v: string) => v.replace(/\s+/g, ' ').trim().toLowerCase();
-    if (normalizeValue(expected) === normalizeValue(actual)) return false;
-    
-    // For numeric values, check if difference is significant
-    const expectedNum = parseFloat(expected);
-    const actualNum = parseFloat(actual);
-    
-    if (!isNaN(expectedNum) && !isNaN(actualNum)) {
-        const diff = Math.abs(expectedNum - actualNum);
-        
-        // For small values (< 10), allow 1px tolerance
-        if (expectedNum < 10 && diff <= 1) return false;
-        
-        // For larger values, allow 2% tolerance
-        if (diff / Math.max(expectedNum, 1) < 0.02) return false;
-    }
-    
-    // For colors, normalize to rgb and compare
-    if (prop.includes('color')) {
-        const normalizeColor = (c: string) => {
-            // Convert hex to rgb, normalize rgb format
-            // This is simplified - production would use a color library
-            return c.replace(/\s/g, '').toLowerCase();
-        };
-        if (normalizeColor(expected) === normalizeColor(actual)) return false;
-    }
-    
-    return true;
-};
-
-export const computeStructuredDiff = (
-    groundTruth: GroundTruth, 
-    currentState: GroundTruth
-): StructuredDiff => {
-    const changes: StyleChange[] = [];
-    const byCategory: Record<string, number> = {};
-    const bySection: Record<string, number> = {};
-    
-    // Iterate through ground truth elements
-    for (const [stableSelector, baseElement] of groundTruth.elements) {
-        const currentElement = currentState.elements.get(stableSelector);
-        
-        // Skip if element not found in current state (structural difference)
-        if (!currentElement) {
-            console.warn(`Element not found in current state: ${stableSelector}`);
-            continue;
-        }
-        
-        // Compare each style property
-        for (const [prop, expectedValue] of Object.entries(baseElement.styles)) {
-            const actualValue = currentElement.styles[prop] || '';
-            
-            if (isSignificantDifference(prop, expectedValue, actualValue)) {
-                const category = categorizeProperty(prop);
-                const section = baseElement.section || 'global';
-                
-                changes.push({
-                    stableSelector,
-                    cssSelector: baseElement.cssSelector,
-                    property: prop,
-                    expected: expectedValue,
-                    actual: actualValue,
-                    section,
-                    tag: baseElement.tag,
-                    rect: baseElement.rect,
-                    priority: 0, // Will be computed in prioritization phase
-                    category
-                });
-                
-                byCategory[category] = (byCategory[category] || 0) + 1;
-                bySection[section] = (bySection[section] || 0) + 1;
-            }
-        }
-    }
-    
-    return {
-        baseUrl: groundTruth.url,
-        targetUrl: currentState.url,
-        device: groundTruth.device,
-        timestamp: new Date().toISOString(),
-        changes,
-        summary: {
-            totalDifferences: changes.length,
-            byCategory,
-            bySection
-        }
-    };
-};
-```
-
----
-
-## Phase 4: Prioritization
-
-### File: `src/ground-truth/prioritizer.ts`
-
-```typescript
-// src/ground-truth/prioritizer.ts
-
-import { StyleChange } from './types';
-
-interface PriorityFactors {
-    visualImpact: number;      // How much does this property affect appearance
-    elementSize: number;       // Larger elements = higher priority
-    aboveFold: number;         // Above-the-fold elements are more important
-    categoryWeight: number;    // Layout > Colors > Typography > Effects
-}
-
-const CATEGORY_WEIGHTS: Record<string, number> = {
-    layout: 10,
-    color: 8,
-    typography: 6,
-    spacing: 5,
-    effects: 3
-};
-
-const PROPERTY_IMPACT: Record<string, number> = {
-    // High impact (10)
-    'display': 10,
-    'background-color': 10,
-    'color': 10,
-    'width': 9,
-    'height': 9,
-    
-    // Medium impact (5-8)
-    'font-size': 8,
-    'padding-top': 7,
-    'padding-bottom': 7,
-    'margin-top': 7,
-    'margin-bottom': 7,
-    'flex-direction': 7,
-    'justify-content': 6,
-    'align-items': 6,
-    'gap': 6,
-    
-    // Lower impact (1-4)
-    'padding-left': 5,
-    'padding-right': 5,
-    'margin-left': 5,
-    'margin-right': 5,
-    'font-weight': 4,
-    'line-height': 4,
-    'border-radius': 3,
-    'letter-spacing': 2,
-    'opacity': 2
-};
-
-const computePriority = (change: StyleChange, viewportHeight: number = 900): number => {
-    let score = 0;
-    
-    // 1. Property impact (0-10)
-    score += PROPERTY_IMPACT[change.property] || 5;
-    
-    // 2. Category weight (0-10)
-    score += CATEGORY_WEIGHTS[change.category] || 5;
-    
-    // 3. Element size (0-10)
-    const area = change.rect.width * change.rect.height;
-    const sizeScore = Math.min(10, area / 10000); // Normalize: 100k px² = max score
-    score += sizeScore;
-    
-    // 4. Above-the-fold bonus (0-10)
-    if (change.rect.y < viewportHeight) {
-        const foldScore = 10 * (1 - change.rect.y / viewportHeight);
-        score += foldScore;
-    }
-    
-    // 5. Section importance (bonus for header/hero)
-    if (change.section) {
-        const lowerSection = change.section.toLowerCase();
-        if (lowerSection.includes('header') || lowerSection.includes('hero')) {
-            score += 5;
-        } else if (lowerSection.includes('nav')) {
-            score += 4;
-        } else if (lowerSection.includes('footer')) {
-            score += 2;
-        }
-    }
-    
-    return score;
-};
-
-export const prioritizeChanges = (
-    changes: StyleChange[], 
-    limit: number = 10,
-    viewportHeight: number = 900
-): StyleChange[] => {
-    // Compute priority for each change
-    const withPriority = changes.map(change => ({
-        ...change,
-        priority: computePriority(change, viewportHeight)
-    }));
-    
-    // Sort by priority (descending)
-    withPriority.sort((a, b) => b.priority - a.priority);
-    
-    // Deduplicate: if same selector+property appears multiple times, keep highest priority
-    const seen = new Set<string>();
-    const deduplicated: StyleChange[] = [];
-    
-    for (const change of withPriority) {
-        const key = `${change.cssSelector}|${change.property}`;
-        if (!seen.has(key)) {
-            seen.add(key);
-            deduplicated.push(change);
-        }
-    }
-    
-    // Return top N
-    return deduplicated.slice(0, limit);
-};
-
-/**
- * Group changes by section for batch processing
- */
-export const groupChangesBySection = (changes: StyleChange[]): Map<string, StyleChange[]> => {
-    const groups = new Map<string, StyleChange[]>();
-    
-    for (const change of changes) {
-        const section = change.section || 'global';
-        if (!groups.has(section)) {
-            groups.set(section, []);
-        }
-        groups.get(section)!.push(change);
-    }
-    
-    return groups;
-};
-
-/**
- * Group changes by selector for efficient CSS generation
- */
-export const groupChangesBySelector = (changes: StyleChange[]): Map<string, StyleChange[]> => {
-    const groups = new Map<string, StyleChange[]>();
-    
-    for (const change of changes) {
-        if (!groups.has(change.cssSelector)) {
-            groups.set(change.cssSelector, []);
-        }
-        groups.get(change.cssSelector)!.push(change);
-    }
-    
-    return groups;
-};
-```
-
----
-
-## Phase 5: Deterministic CSS Patching
-
-### File: `src/patcher/css-patcher.ts`
-
-```typescript
-// src/patcher/css-patcher.ts
-
-import fs from 'fs/promises';
-import postcss, { Root, Rule } from 'postcss';
-import { StyleChange } from '../ground-truth/types';
-import { groupChangesBySelector } from '../ground-truth/prioritizer';
-
-/**
- * Apply CSS patches using PostCSS AST manipulation.
- * 
- * This is the DETERMINISTIC core - no LLM involved.
- */
-export const applyCSSPatches = async (
-    overridesPath: string,
-    changes: StyleChange[]
-): Promise<{ success: boolean; appliedCount: number; errors: string[] }> => {
-    const errors: string[] = [];
-    let appliedCount = 0;
-    
-    // Read existing overrides (or start fresh)
-    let cssContent = '';
-    try {
-        cssContent = await fs.readFile(overridesPath, 'utf-8');
-    } catch {
-        cssContent = '/* Auto-generated CSS overrides */\n';
-    }
-    
-    // Parse with PostCSS
-    const root = postcss.parse(cssContent);
-    
-    // Group changes by selector for efficiency
-    const grouped = groupChangesBySelector(changes);
-    
-    for (const [selector, selectorChanges] of grouped) {
-        try {
-            // Find existing rule or create new one
-            let rule = findRule(root, selector);
-            
-            if (!rule) {
-                rule = postcss.rule({ selector });
-                root.append(rule);
-            }
-            
-            // Apply each property change
-            for (const change of selectorChanges) {
-                applyPropertyChange(rule, change.property, change.expected);
-                appliedCount++;
-            }
-        } catch (e) {
-            errors.push(`Failed to apply ${selector}: ${e}`);
-        }
-    }
-    
-    // Write back
-    const output = root.toString();
-    await fs.writeFile(overridesPath, output, 'utf-8');
-    
-    return { success: errors.length === 0, appliedCount, errors };
-};
-
-const findRule = (root: Root, selector: string): Rule | undefined => {
-    let found: Rule | undefined;
-    
-    root.walkRules((rule) => {
-        if (rule.selector === selector) {
-            found = rule;
-        }
-    });
-    
-    return found;
-};
-
-const applyPropertyChange = (rule: Rule, property: string, value: string): void => {
-    let found = false;
-    
-    // Check if property already exists
-    rule.walkDecls(property, (decl) => {
-        decl.value = value;
-        found = true;
-    });
-    
-    // If not found, append new declaration
-    if (!found) {
-        rule.append({ prop: property, value });
-    }
-};
-
-/**
- * Generate CSS override content without modifying files.
- * Useful for preview/validation before applying.
- */
-export const generateCSSOverrides = (changes: StyleChange[]): string => {
-    const lines: string[] = ['/* Auto-generated CSS overrides */'];
-    
-    const grouped = groupChangesBySelector(changes);
-    
-    for (const [selector, selectorChanges] of grouped) {
-        lines.push('');
-        lines.push(`${selector} {`);
-        
-        for (const change of selectorChanges) {
-            // Add !important to ensure override takes effect
-            lines.push(`  ${change.property}: ${change.expected} !important;`);
-        }
-        
-        lines.push('}');
-    }
-    
-    return lines.join('\n');
-};
-
-/**
- * Remove a specific change (for rollback).
- */
-export const removeOverride = async (
-    overridesPath: string,
-    change: StyleChange
-): Promise<void> => {
-    const cssContent = await fs.readFile(overridesPath, 'utf-8');
-    const root = postcss.parse(cssContent);
-    
-    root.walkRules(change.cssSelector, (rule) => {
-        rule.walkDecls(change.property, (decl) => {
-            decl.remove();
-        });
-        
-        // Remove empty rules
-        if (rule.nodes?.length === 0) {
-            rule.remove();
-        }
-    });
-    
-    await fs.writeFile(overridesPath, root.toString(), 'utf-8');
-};
-```
-
-### File: `src/patcher/override-generator.ts`
-
-```typescript
-// src/patcher/override-generator.ts
-
-import fs from 'fs/promises';
-import path from 'path';
-import { StyleChange } from '../ground-truth/types';
-
-/**
- * Alternative approach: Instead of modifying existing CSS,
- * generate a standalone overrides file that's loaded last.
- * 
- * This is simpler and has cleaner rollback semantics.
- */
-
-interface OverrideEntry {
-    selector: string;
-    property: string;
-    value: string;
-    addedAt: string;
-    iteration: number;
-}
-
-export class OverrideManager {
-    private entries: OverrideEntry[] = [];
-    private filePath: string;
-    
-    constructor(siteDir: string) {
-        this.filePath = path.join(siteDir, 'site', 'overrides.css');
-    }
-    
-    async load(): Promise<void> {
-        try {
-            const metaPath = this.filePath.replace('.css', '.json');
-            const meta = await fs.readFile(metaPath, 'utf-8');
-            this.entries = JSON.parse(meta);
-        } catch {
-            this.entries = [];
-        }
-    }
-    
-    async save(): Promise<void> {
-        // Save metadata
-        const metaPath = this.filePath.replace('.css', '.json');
-        await fs.writeFile(metaPath, JSON.stringify(this.entries, null, 2));
-        
-        // Generate CSS
-        const css = this.generateCSS();
-        await fs.writeFile(this.filePath, css);
-    }
-    
-    addChange(change: StyleChange, iteration: number): void {
-        // Remove existing entry for same selector+property if exists
-        this.entries = this.entries.filter(e => 
-            !(e.selector === change.cssSelector && e.property === change.property)
-        );
-        
-        this.entries.push({
-            selector: change.cssSelector,
-            property: change.property,
-            value: change.expected,
-            addedAt: new Date().toISOString(),
-            iteration
-        });
-    }
-    
-    removeChange(selector: string, property: string): void {
-        this.entries = this.entries.filter(e => 
-            !(e.selector === selector && e.property === property)
-        );
-    }
-    
-    rollbackIteration(iteration: number): void {
-        this.entries = this.entries.filter(e => e.iteration !== iteration);
-    }
-    
-    private generateCSS(): string {
-        const lines: string[] = [
-            '/**',
-            ' * AUTO-GENERATED CSS OVERRIDES',
-            ' * Do not edit manually - managed by PixelGen',
-            ` * Generated: ${new Date().toISOString()}`,
-            ' */',
-            ''
-        ];
-        
-        // Group by selector
-        const bySelector = new Map<string, OverrideEntry[]>();
-        for (const entry of this.entries) {
-            if (!bySelector.has(entry.selector)) {
-                bySelector.set(entry.selector, []);
-            }
-            bySelector.get(entry.selector)!.push(entry);
-        }
-        
-        // Generate rules
-        for (const [selector, entries] of bySelector) {
-            lines.push(`${selector} {`);
-            for (const entry of entries) {
-                lines.push(`  ${entry.property}: ${entry.value} !important; /* iter ${entry.iteration} */`);
-            }
-            lines.push('}');
-            lines.push('');
-        }
-        
-        return lines.join('\n');
-    }
-}
-```
-
----
-
-## Phase 6: Validation
-
-### File: `src/patcher/validator.ts`
-
-```typescript
-// src/patcher/validator.ts
-
-import { chromium } from 'playwright';
-import { StyleChange } from '../ground-truth/types';
-
-interface ValidationResult {
-    applied: StyleChange[];
-    failed: StyleChange[];
-    regressions: Array<{
-        change: StyleChange;
-        before: string;
-        after: string;
-        issue: string;
-    }>;
-}
-
-/**
- * Validate that changes were applied correctly and didn't cause regressions.
- */
-export const validateChanges = async (
-    url: string,
-    appliedChanges: StyleChange[],
-    device: 'desktop' | 'mobile' = 'desktop',
-    baselineStyles?: Map<string, Record<string, string>>
-): Promise<ValidationResult> => {
-    const result: ValidationResult = {
-        applied: [],
-        failed: [],
-        regressions: []
-    };
-    
-    const viewport = device === 'mobile' 
-        ? { width: 390, height: 844 }
-        : { width: 1440, height: 900 };
-    
-    const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({ viewport });
-    const page = await context.newPage();
-    
-    // Add cache-busting to ensure fresh load
-    const cacheBuster = `?cb=${Date.now()}`;
-    await page.goto(url + cacheBuster, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(500);
-    
-    // Check each applied change
-    for (const change of appliedChanges) {
-        try {
-            const actualValue = await page.evaluate(({ selector, property }) => {
-                const el = document.querySelector(selector);
-                if (!el) return null;
-                return window.getComputedStyle(el).getPropertyValue(property);
-            }, { selector: change.cssSelector, property: change.property });
-            
-            if (actualValue === null) {
-                result.failed.push(change);
-                continue;
-            }
-            
-            // Check if change was applied (allowing some normalization)
-            if (valuesMatch(change.expected, actualValue)) {
-                result.applied.push(change);
-            } else {
-                result.failed.push(change);
-            }
-        } catch (e) {
-            result.failed.push(change);
-        }
-    }
-    
-    // Check for regressions on other elements (if baseline provided)
-    if (baselineStyles) {
-        const regressionChecks = await page.evaluate((props) => {
-            const results: any[] = [];
-            for (const [selector, expectedStyles] of Object.entries(props)) {
-                const el = document.querySelector(selector);
-                if (!el) continue;
-                
-                const computed = window.getComputedStyle(el);
-                for (const [prop, expected] of Object.entries(expectedStyles as Record<string, string>)) {
-                    const actual = computed.getPropertyValue(prop);
-                    if (actual !== expected) {
-                        results.push({ selector, property: prop, expected, actual });
-                    }
-                }
-            }
-            return results;
-        }, Object.fromEntries(baselineStyles));
-        
-        // Filter regressions - only report if not in appliedChanges
-        for (const reg of regressionChecks) {
-            const wasIntentional = appliedChanges.some(c => 
-                c.cssSelector === reg.selector && c.property === reg.property
-            );
-            if (!wasIntentional) {
-                result.regressions.push({
-                    change: {
-                        stableSelector: '',
-                        cssSelector: reg.selector,
-                        property: reg.property,
-                        expected: reg.expected,
-                        actual: reg.actual,
-                        tag: '',
-                        rect: { x: 0, y: 0, width: 0, height: 0 },
-                        priority: 0,
-                        category: 'effects'
-                    },
-                    before: reg.expected,
-                    after: reg.actual,
-                    issue: `Unintended change: ${reg.property} changed from ${reg.expected} to ${reg.actual}`
-                });
-            }
-        }
-    }
-    
-    await browser.close();
-    return result;
-};
-
-const valuesMatch = (expected: string, actual: string): boolean => {
-    // Normalize values for comparison
-    const normalize = (v: string) => v.replace(/\s+/g, ' ').trim().toLowerCase();
-    
-    if (normalize(expected) === normalize(actual)) return true;
-    
-    // Try numeric comparison with tolerance
-    const expNum = parseFloat(expected);
-    const actNum = parseFloat(actual);
-    if (!isNaN(expNum) && !isNaN(actNum)) {
-        return Math.abs(expNum - actNum) < 1; // 1px tolerance
-    }
-    
-    return false;
-};
-```
-
-### File: `src/patcher/rollback.ts`
-
-```typescript
-// src/patcher/rollback.ts
-
-import { StyleChange } from '../ground-truth/types';
-import { removeOverride } from './css-patcher';
-import { OverrideManager } from './override-generator';
-
-/**
- * Rollback a specific change.
- */
-export const rollbackChange = async (
-    overridesPath: string,
-    change: StyleChange
-): Promise<void> => {
-    await removeOverride(overridesPath, change);
-};
-
-/**
- * Rollback all changes from a specific iteration.
- */
-export const rollbackIteration = async (
-    siteDir: string,
-    iteration: number
-): Promise<void> => {
-    const manager = new OverrideManager(siteDir);
-    await manager.load();
-    manager.rollbackIteration(iteration);
-    await manager.save();
-};
-
-/**
- * Rollback to a specific iteration state.
- */
-export const rollbackToIteration = async (
-    siteDir: string,
-    targetIteration: number
-): Promise<void> => {
-    const manager = new OverrideManager(siteDir);
-    await manager.load();
-    
-    // Remove all changes from iterations after target
-    for (let i = targetIteration + 1; i < 100; i++) {
-        manager.rollbackIteration(i);
-    }
-    
-    await manager.save();
-};
-```
-
----
-
-## Integration: HTML Structure Freezing
-
-### File: `src/structure-freeze.ts`
-
-```typescript
-// src/structure-freeze.ts
-
-import fs from 'fs/promises';
-import path from 'path';
-import * as cheerio from 'cheerio';
-
-interface FreezeResult {
-    frozenHtml: string;
-    baseCss: string;
-    overridesPath: string;
-    cssPath: string;
-}
-
-/**
- * Freeze the HTML structure after initial generation.
- * 
- * 1. Extract all inline styles into a CSS file
- * 2. Add data-section attributes for stable selectors
- * 3. Add overrides.css link
- * 4. Make HTML read-only for subsequent iterations
- */
-export const freezeStructure = async (siteDir: string): Promise<FreezeResult> => {
-    const htmlPath = path.join(siteDir, 'site', 'index.html');
-    const cssPath = path.join(siteDir, 'site', 'extracted-styles.css');
-    const overridesPath = path.join(siteDir, 'site', 'overrides.css');
-    
-    const html = await fs.readFile(htmlPath, 'utf-8');
-    const $ = cheerio.load(html);
-    
-    // 1. Extract inline styles
-    const extractedStyles: string[] = [];
-    let styleIndex = 0;
-    
-    $('[style]').each((_, el) => {
-        const $el = $(el);
-        const style = $el.attr('style');
-        if (style) {
-            // Generate a unique class for this element
-            const className = `_extracted_${styleIndex++}`;
-            $el.addClass(className);
-            $el.removeAttr('style');
-            
-            extractedStyles.push(`.${className} { ${style} }`);
-        }
-    });
-    
-    // 2. Add data-section attributes to semantic elements
-    let sectionIndex = 0;
-    $('header, nav, main, section, article, aside, footer').each((_, el) => {
-        const $el = $(el);
-        if (!$el.attr('data-section')) {
-            // Try to infer a name from heading or class
-            const heading = $el.find('h1, h2, h3').first().text().trim().slice(0, 30);
-            const className = ($el.attr('class') || '').split(' ')[0];
-            const tagName = el.tagName.toLowerCase();
-            
-            const name = heading || className || `${tagName}-${sectionIndex++}`;
-            $el.attr('data-section', name.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase());
-        }
-    });
-    
-    // 3. Add CSS links in head
-    const hasExtractedLink = $('link[href*="extracted-styles.css"]').length > 0;
-    const hasOverridesLink = $('link[href*="overrides.css"]').length > 0;
-    
-    if (!hasExtractedLink && extractedStyles.length > 0) {
-        $('head').append('<link rel="stylesheet" href="./extracted-styles.css">');
-    }
-    
-    if (!hasOverridesLink) {
-        $('head').append('<link rel="stylesheet" href="./overrides.css">');
-    }
-    
-    // 4. Save files
-    const frozenHtml = $.html();
-    await fs.writeFile(htmlPath, frozenHtml);
-    
-    const baseCss = extractedStyles.join('\n\n');
-    if (baseCss) {
-        await fs.writeFile(cssPath, baseCss);
-    }
-    
-    // Create empty overrides file
-    await fs.writeFile(overridesPath, '/* CSS Overrides - managed by PixelGen */\n');
-    
-    // 5. Create structure lock file
-    const structureLock = {
-        frozenAt: new Date().toISOString(),
-        sections: [] as string[]
-    };
-    
-    $('[data-section]').each((_, el) => {
-        structureLock.sections.push($(el).attr('data-section') || '');
-    });
-    
-    await fs.writeFile(
-        path.join(siteDir, 'structure-lock.json'),
-        JSON.stringify(structureLock, null, 2)
+    rewrittenCode = rewrittenCode.replace(hrefPattern, `href="${rewrite.replacement}"`);
+    
+    // Also handle to= for React Router
+    const toPattern = new RegExp(
+      `to=["']${escapeRegex(rewrite.original)}["']`,
+      'g'
     );
-    
-    return {
-        frozenHtml,
-        baseCss,
-        overridesPath,
-        cssPath
-    };
-};
-
-/**
- * Verify that HTML structure hasn't changed since freeze.
- */
-export const verifyStructure = async (siteDir: string): Promise<boolean> => {
-    const lockPath = path.join(siteDir, 'structure-lock.json');
-    const htmlPath = path.join(siteDir, 'site', 'index.html');
-    
-    try {
-        const lock = JSON.parse(await fs.readFile(lockPath, 'utf-8'));
-        const html = await fs.readFile(htmlPath, 'utf-8');
-        const $ = cheerio.load(html);
-        
-        const currentSections: string[] = [];
-        $('[data-section]').each((_, el) => {
-            currentSections.push($(el).attr('data-section') || '');
-        });
-        
-        return JSON.stringify(lock.sections) === JSON.stringify(currentSections);
-    } catch {
-        return false;
-    }
+    rewrittenCode = rewrittenCode.replace(toPattern, `to="${rewrite.replacement}"`);
+  }
+  
+  return rewrittenCode;
 };
 ```
 
 ---
 
-## Migration Guide
+## Implementation Priority
 
-### Step 1: Install Dependencies
+### Phase 1: Quick Wins (1-2 days)
+1. ✅ Fix position-based element matching (you're already on this)
+2. Implement single-change-at-a-time patching with rollback
+3. Add impact scoring to prioritize CSS changes
 
-```bash
-npm install postcss cheerio
-npm install -D @types/cheerio
-```
+### Phase 2: DNA Extraction (3-5 days)
+4. Build Site DNA Extractor
+5. Create Enhanced Prompt Builder with DNA
+6. Integrate DNA into generation pipeline
 
-### Step 2: File Creation Order
+### Phase 3: Section-by-Section Generation (3-5 days)
+7. Implement section cropping and individual generation
+8. Add section validation after each generation
+9. Build section combiner
 
-1. Create `src/ground-truth/types.ts`
-2. Create `src/ground-truth/extractor.ts`
-3. Create `src/ground-truth/differ.ts`
-4. Create `src/ground-truth/prioritizer.ts`
-5. Create `src/patcher/css-patcher.ts`
-6. Create `src/patcher/override-generator.ts`
-7. Create `src/patcher/validator.ts`
-8. Create `src/patcher/rollback.ts`
-9. Create `src/structure-freeze.ts`
-10. Create `src/pixelgen-v2.ts`
-
-### Step 3: Modify Existing Files
-
-#### `src/pixelgen.ts` → Keep as `pixelgen-legacy.ts`
-- Rename the current file for backward compatibility
-- Export both v1 and v2 from an index file
-
-#### `src/server.ts` → Add v2 endpoint
-```typescript
-app.post('/pixelgen/v2/run', async (req, res) => {
-    const result = await runPixelGenV2(req.body);
-    res.json(result);
-});
-```
-
-### Step 4: Environment Variables
-
-```bash
-# .env additions
-PIXELGEN_VERSION=2                    # Use v2 by default
-PIXELGEN_CHANGES_PER_ITERATION=5      # Max CSS changes per iteration
-PIXELGEN_MAX_ITERATIONS=20            # Max iteration count
-PIXELGEN_TARGET_SIMILARITY=0.95       # Target similarity score
-PIXELGEN_REGRESSION_THRESHOLD=0.02    # Max allowed regression
-```
+### Phase 4: Multi-Page Improvements (3-5 days)
+10. Visual shared component detection
+11. Shared-first generation pipeline
+12. Enhanced link rewriting
 
 ---
 
-## Testing Plan
+## Expected Results
 
-### Unit Tests
-
-```typescript
-// tests/ground-truth/extractor.test.ts
-describe('extractGroundTruth', () => {
-    it('should extract computed styles from all visible elements');
-    it('should generate stable selectors that match across sites');
-    it('should handle dynamic class names (CSS modules, Tailwind)');
-    it('should correctly identify section boundaries');
-});
-
-// tests/ground-truth/differ.test.ts
-describe('computeStructuredDiff', () => {
-    it('should detect property differences');
-    it('should ignore insignificant differences (< 2px)');
-    it('should normalize color values');
-    it('should handle missing elements gracefully');
-});
-
-// tests/patcher/css-patcher.test.ts
-describe('applyCSSPatches', () => {
-    it('should add new rules for new selectors');
-    it('should update existing rules');
-    it('should preserve unrelated rules');
-    it('should generate valid CSS');
-});
-```
-
-### Integration Tests
-
-```typescript
-// tests/integration/pixelgen-v2.test.ts
-describe('PixelGen v2 Integration', () => {
-    it('should improve similarity over iterations');
-    it('should not regress on locked structure');
-    it('should rollback failed changes');
-    it('should converge within max iterations');
-});
-```
+| Metric | Current | After Phase 1 | After Phase 2 | After Phase 4 |
+|--------|---------|---------------|---------------|---------------|
+| First Gen Accuracy | 60% | 65% | 85-90% | 85-90% |
+| Max Iteration Improvement | 10% | 20% | 25% | 25% |
+| Final Achievable | 70% | 85% | 95%+ | 95%+ |
+| Multi-Page Consistency | N/A | N/A | N/A | 90%+ |
 
 ---
 
-## Expected Improvements
+## Key Files to Modify/Create
 
-| Metric | Current (v1) | Expected (v2) |
-|--------|--------------|---------------|
-| Iteration success rate | ~20% | >90% |
-| Changes applied per iteration | 0-1 | 3-5 |
-| Time per iteration | 60-90s | 10-20s |
-| Final similarity | 0.3-0.5 | 0.85-0.95 |
-| Regressions per run | Many | Near zero |
+### New Files
+- `src/site-dna-extractor.ts` - Extract site DNA
+- `src/enhanced-prompt-builder.ts` - Build prompts with DNA
+- `src/position-matcher.ts` - Position-based element matching
+- `src/css-impact-scorer.ts` - Score and prioritize CSS changes
+- `src/surgical-patcher.ts` - Single-change patching with validation
+- `src/visual-shared-detector.ts` - Visual shared component detection
+- `src/shared-first-generator.ts` - Multi-page with shared components
 
----
-
-## Rollout Plan
-
-### Phase 1: Parallel Testing (Week 1)
-- Deploy v2 alongside v1
-- Run both on same inputs
-- Compare results
-
-### Phase 2: Gradual Migration (Week 2)
-- Route 10% traffic to v2
-- Monitor metrics
-- Fix issues
-
-### Phase 3: Full Migration (Week 3)
-- Route 100% to v2
-- Deprecate v1
-- Update documentation
+### Modified Files
+- `src/structure-aware-generator.ts` - Integrate DNA extraction
+- `src/pixelgen-v2.ts` - Use new iteration approach
+- `src/ground-truth/extractor.ts` - Position-based extraction
+- `src/ground-truth/differ.ts` - Impact-scored diffing
+- `src/multi-page-orchestrator.ts` - Visual shared detection
+- `src/link-rewriter.ts` - Enhanced link rewriting

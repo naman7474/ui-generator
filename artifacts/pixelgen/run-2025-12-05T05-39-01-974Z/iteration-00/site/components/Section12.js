@@ -1,6 +1,0 @@
-import React from 'https://esm.sh/react@18?dev&target=es2018';
-export default function Section12() {
-  return React.createElement('div', {
-    dangerouslySetInnerHTML: { __html: `<footer data-section="ABOUT US" class="bg-white border-t border-gray-200"><div class="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8"><div class="grid grid-cols-1 md:grid-cols-12 gap-8"><div class="md:col-span-5"><a href="#"><img class="h-10 w-auto mb-6" src="./assets/images/7a70d27de3.png" alt="KILRR Logo"></a><p class="text-sm text-gray-500">© 2025 - KILRR</p></div><div class="hidden md:block md:col-span-1"></div><div class="md:col-span-3"><h3 class="text-sm font-semibold text-gray-800 tracking-wider uppercase">About Us</h3><p class="mt-4 text-base text-gray-600">We crave good clean food, but we are also lazy like you all. And, that's why we made these instant marinades.</p></div><div class="md:col-span-3"><h3 class="text-sm font-semibold text-gray-800 tracking-wider uppercase">Help & About</h3><ul class="mt-4 space-y-3"><li><a href="#" class="text-base text-gray-600 hover:text-gray-900">Our Policies</a></li><li><a href="#" class="text-base text-gray-600 hover:text-gray-900">Contact Us</a></li></ul></div></div></div></footer>` }
-  });
-}
