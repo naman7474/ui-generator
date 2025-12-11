@@ -1,0 +1,54 @@
+{
+  "jobId": "run-2025-12-09T06-14-28-506Z",
+  "entryUrl": "https://shop.kilrr.com",
+  "summary": {
+    "totalPages": 3,
+    "successfulPages": 1,
+    "averageSimilarity": 0.9173426649305556,
+    "minSimilarity": 0.9173426649305556,
+    "maxSimilarity": 0.9173426649305556
+  },
+  "pages": [
+    {
+      "path": "home",
+      "url": "https://shop.kilrr.com",
+      "success": false,
+      "similarity": 0.6571324416733708,
+      "siteDir": "artifacts/multi-page/run-2025-12-09T06-14-28-506Z/pages/home",
+      "localUrl": "http://localhost:3000/artifacts/pixelgen-v2/run-2025-12-09T06-14-40-996Z/site/index.html"
+    },
+    {
+      "path": "pages-our-policies",
+      "url": "https://shop.kilrr.com/pages/our-policies",
+      "success": true,
+      "similarity": 0.9173426649305556,
+      "siteDir": "artifacts/multi-page/run-2025-12-09T06-14-28-506Z/pages/pages-our-policies",
+      "localUrl": "http://localhost:3000/artifacts/pixelgen-v2/run-2025-12-09T06-37-34-201Z/site/index.html"
+    },
+    {
+      "path": "pages-contact-us",
+      "url": "https://shop.kilrr.com/pages/contact-us",
+      "success": false,
+      "similarity": 0.8855740017361111,
+      "siteDir": "artifacts/multi-page/run-2025-12-09T06-14-28-506Z/pages/pages-contact-us",
+      "localUrl": "http://localhost:3000/artifacts/pixelgen-v2/run-2025-12-09T07-06-58-937Z/site/index.html"
+    }
+  ],
+  "routes": [
+    {
+      "path": "/",
+      "component": "HomePage",
+      "title": "KILRR | Get killer taste with zero fuss"
+    },
+    {
+      "path": "/pages-our-policies",
+      "component": "PagesOurPoliciesPage",
+      "title": "OUR POLICIES"
+    },
+    {
+      "path": "/pages-contact-us",
+      "component": "PagesContactUsPage",
+      "title": "Contact Us"
+    }
+  ]
+}

@@ -74,6 +74,7 @@ export interface StructureAwareGenerationOptions {
     maxAttempts?: number;
     targetMatchRate?: number;
     extractAssets?: boolean;
+    routeMap?: Record<string, string>;  // Original path → route for link generation
 }
 
 export const generateWithStructure = async (
@@ -105,7 +106,8 @@ export const generateWithStructure = async (
     const result = await generateWithMultiStep({
         baseUrl,
         maxSections: 15,
-        extractAssets
+        extractAssets,
+        routeMap: options.routeMap
     });
 
     // ========== STEP 3: Verify ==========
@@ -137,7 +139,8 @@ export const generateWithStructure = async (
 
 export const generateInitialSiteWithStructure = async (
     baseUrl: string,
-    extractAssets: boolean = true
+    extractAssets: boolean = true,
+    routeMap?: Record<string, string>
 ): Promise<{
     bundle: ReactBundle;
     siteDir: string;
@@ -149,7 +152,8 @@ export const generateInitialSiteWithStructure = async (
         baseUrl,
         maxAttempts: 1,
         targetMatchRate: 50,
-        extractAssets
+        extractAssets,
+        routeMap
     });
 
     // Read bundle

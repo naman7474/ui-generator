@@ -1,0 +1,17 @@
+[
+  {
+    "originalUrl": "https://d29g4g2dyqv443.cloudfront.net/sites/default/files/akamai/homepage/nvidia-developer-downloads-ngc-containers-r2.png",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T13-11-39-428Z/assets/img-0.png",
+    "relativePath": "./assets/img-0.png",
+    "type": "image",
+    "rect": {
+      "x": 735,
+      "y": 367,
+      "width": 630,
+      "height": 354
+    },
+    "alt": "Deploy the latest GPU optimized AI and HPC containers",
+    "isBackground": false,
+    "role": "hero"
+  }
+]

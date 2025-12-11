@@ -1,0 +1,16 @@
+{
+  "iteration": 2,
+  "similarity": 0.8851312934027777,
+  "improvement": -0.1543706597222222,
+  "appliedCount": 8,
+  "changes": [
+    "color: rgb(45, 55, 72)",
+    "background-color: rgb(28, 28, 28)",
+    "font-family: Futura, sans-serif",
+    "font-weight: 400",
+    "gap: 20px",
+    "padding-top: 20px",
+    "font-weight: 400",
+    "text-align: center"
+  ]
+}

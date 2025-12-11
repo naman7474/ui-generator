@@ -1,0 +1,54 @@
+{
+  "jobId": "run-2025-12-09T12-42-12-740Z",
+  "entryUrl": "https://developer.nvidia.com/",
+  "summary": {
+    "totalPages": 3,
+    "successfulPages": 0,
+    "averageSimilarity": 0,
+    "minSimilarity": 0,
+    "maxSimilarity": 0
+  },
+  "pages": [
+    {
+      "path": "home",
+      "url": "https://developer.nvidia.com/",
+      "success": false,
+      "similarity": 0.46911612785610113,
+      "siteDir": "artifacts/multi-page/run-2025-12-09T12-42-12-740Z/pages/home",
+      "localUrl": "http://localhost:3000/artifacts/pixelgen-v2/run-2025-12-09T12-42-34-603Z/site/index.html"
+    },
+    {
+      "path": "blog",
+      "url": "https://developer.nvidia.com/blog/",
+      "success": false,
+      "similarity": 0.8562358940972222,
+      "siteDir": "artifacts/multi-page/run-2025-12-09T12-42-12-740Z/pages/blog",
+      "localUrl": "http://localhost:3000/artifacts/pixelgen-v2/run-2025-12-09T12-59-12-334Z/site/index.html"
+    },
+    {
+      "path": "downloads",
+      "url": "https://developer.nvidia.com/downloads",
+      "success": false,
+      "similarity": 0.7094162326388889,
+      "siteDir": "artifacts/multi-page/run-2025-12-09T12-42-12-740Z/pages/downloads",
+      "localUrl": "http://localhost:3000/artifacts/pixelgen-v2/run-2025-12-09T13-11-39-428Z/site/index.html"
+    }
+  ],
+  "routes": [
+    {
+      "path": "/",
+      "component": "HomePage",
+      "title": "NVIDIA Developer"
+    },
+    {
+      "path": "/blog",
+      "component": "BlogPage",
+      "title": "NVIDIA Technical Blog"
+    },
+    {
+      "path": "/downloads",
+      "component": "DownloadsPage",
+      "title": "Developer Download Centers | NVIDIA Developer"
+    }
+  ]
+}

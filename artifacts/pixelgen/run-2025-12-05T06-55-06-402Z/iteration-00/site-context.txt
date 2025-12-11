@@ -1,0 +1,1416 @@
+
+--- App.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+
+export default function App({ sections = [] }) {
+  if (sections.length === 0) {
+    return React.createElement('div', { className: 'p-8 text-center text-gray-500' }, 
+      'No sections loaded. Check console for errors.'
+    );
+  }
+  
+  return React.createElement('div', { id: 'app-root' },
+    sections.map((Section, i) => 
+      React.createElement(Section, { key: i })
+    )
+  );
+}
+
+
+--- components/Section0.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section0() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="Announcement Bar" class="w-full bg-[#121212] text-white py-2.5">
+  <div class="container mx-auto px-4 text-center">
+    <p class="text-[11px] md:text-xs font-medium tracking-[0.2em] uppercase">
+      FREE SHIPPING OVER ₹399
+    </p>
+  </div>
+</section>` }
+  });
+}
+
+--- components/Section1.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section1() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="Hero Banner" class="w-full flex flex-col font-sans">
+  <div class="bg-black text-white text-center py-2.5 px-4">
+    <p class="text-xs font-bold tracking-widest uppercase">FREE SHIPPING OVER ₹399</p>
+  </div>
+  <div class="w-full">
+    <img src="./assets/images/3b124f78c6.png" alt="Hero Banner" class="w-full h-auto object-cover block" />
+  </div>
+</section>` }
+  });
+}
+
+--- components/Section10.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section10() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="FAQ Accordion" class="bg-white py-16 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-3xl font-medium text-center text-gray-900 mb-12 tracking-wide uppercase">
+      NEED MORE EVIDENCE?
+    </h2>
+    
+    <div class="border-t border-b border-gray-200 divide-y divide-gray-200">
+      <!-- Item 1 -->
+      <details class="group">
+        <summary class="flex justify-between items-center py-6 cursor-pointer list-none focus:outline-none">
+          <span class="text-lg text-gray-900 font-normal">What's in each pack?</span>
+          <span class="transition-transform duration-300 group-open:rotate-45 text-gray-500">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-6 text-gray-600 leading-relaxed">
+          <p>The perfect mix of spices, herbs, dried vegetables – everything you need for your marinade or your gravy.</p>
+        </div>
+      </details>
+
+      <!-- Item 2 -->
+      <details class="group">
+        <summary class="flex justify-between items-center py-6 cursor-pointer list-none focus:outline-none">
+          <span class="text-lg text-gray-900 font-normal">How do I cook?</span>
+          <span class="transition-transform duration-300 group-open:rotate-45 text-gray-500">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-6 text-gray-600 leading-relaxed">
+          <div class="grid gap-6 sm:grid-cols-2">
+            <div>
+              <p class="font-medium text-gray-900 mb-2">Chicken Tikka,</p>
+              <ol class="list-decimal list-inside space-y-1">
+                <li>Add water &amp; oil to spice mix</li>
+                <li>Marinate chicken</li>
+                <li>Cook like you usually do</li>
+              </ol>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900 mb-2">Chicken Gravy,</p>
+              <ol class="list-decimal list-inside space-y-1">
+                <li>Saute chicken</li>
+                <li>Add water &amp; masala</li>
+                <li>Cook for 30 min</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Item 3 -->
+      <details class="group">
+        <summary class="flex justify-between items-center py-6 cursor-pointer list-none focus:outline-none">
+          <span class="text-lg text-gray-900 font-normal">What's the shelf life?</span>
+          <span class="transition-transform duration-300 group-open:rotate-45 text-gray-500">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-6 text-gray-600 leading-relaxed">
+          <p>You can store the masala packs for 6 months. But we think, you won't be able to resist the temptation to use them for so long.</p>
+        </div>
+      </details>
+
+      <!-- Item 4 -->
+      <details class="group">
+        <summary class="flex justify-between items-center py-6 cursor-pointer list-none focus:outline-none">
+          <span class="text-lg text-gray-900 font-normal">How much chicken per pack?</span>
+          <span class="transition-transform duration-300 group-open:rotate-45 text-gray-500">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-6 text-gray-600 leading-relaxed">
+          <p>Tikkas Masalas marinate 250g chicken &amp; the Gravy Masalas make 500g chicken.</p>
+        </div>
+      </details>
+
+      <!-- Item 5 -->
+      <details class="group">
+        <summary class="flex justify-between items-center py-6 cursor-pointer list-none focus:outline-none">
+          <span class="text-lg text-gray-900 font-normal">What if I need to make more?</span>
+          <span class="transition-transform duration-300 group-open:rotate-45 text-gray-500">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-6 text-gray-600 leading-relaxed">
+          <p>It's simple Maths. If 250g needs 1 pack + 3 tbsp water; 500g needs 2X, that's 2 packs + 6 tbsp water.</p>
+        </div>
+      </details>
+
+      <!-- Item 6 -->
+      <details class="group">
+        <summary class="flex justify-between items-center py-6 cursor-pointer list-none focus:outline-none">
+          <span class="text-lg text-gray-900 font-normal">Why not buy pre-marinated chicken?</span>
+          <span class="transition-transform duration-300 group-open:rotate-45 text-gray-500">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-6 text-gray-600 leading-relaxed">
+          <p>Seriously!? Do you even know what's in it &amp; for how long it's been lying in your vendor's fridge? Didn't think you would ask!</p>
+        </div>
+      </details>
+
+      <!-- Item 7 -->
+      <details class="group">
+        <summary class="flex justify-between items-center py-6 cursor-pointer list-none focus:outline-none">
+          <span class="text-lg text-gray-900 font-normal">What about other flavor masalas?</span>
+          <span class="transition-transform duration-300 group-open:rotate-45 text-gray-500">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-6 text-gray-600 leading-relaxed">
+          <p>Almost all require you to add the wet ingredients – onion, ginger, garlic, chilli, curd.. why pay to waste time?</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>` }
+  });
+}
+
+--- components/Section11.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section11() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="Together we are gonna kill it" class="w-full bg-gray-100 py-24 px-4 flex flex-col items-center justify-center text-center">
+  <p class="text-[#d65a31] font-medium tracking-[0.15em] text-sm md:text-base mb-4 uppercase">
+    End of Kilrr Case File
+  </p>
+  <h2 class="text-3xl md:text-5xl text-gray-800 uppercase tracking-wide font-normal">
+    Together we are gonna kill it
+  </h2>
+</section>` }
+  });
+}
+
+--- components/Section12.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section12() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="Footer" class="bg-white py-16 md:py-24 border-t border-gray-50">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="flex flex-col md:flex-row justify-between gap-12">
+      
+      <!-- Brand Column -->
+      <div class="flex flex-col justify-between items-start w-full md:w-1/4 min-h-[160px]">
+        <div class="mb-8 md:mb-0">
+          <img src="./assets/images/7a70d27de3.png" alt="KILRR" class="h-14 md:h-16 w-auto object-contain" />
+        </div>
+        <div class="mt-auto">
+          <p class="text-xs text-gray-500 uppercase tracking-widest">
+            &copy; 2025 - KILRR
+          </p>
+        </div>
+      </div>
+
+      <!-- About Column -->
+      <div class="w-full md:w-1/3">
+        <h3 class="text-xs font-bold text-gray-900 uppercase tracking-[0.2em] mb-6">
+          About Us
+        </h3>
+        <p class="text-gray-500 text-base leading-relaxed">
+          We crave good clean food, but we are also lazy like you all. And, that's why we made these instant marinades.
+        </p>
+      </div>
+
+      <!-- Links Column -->
+      <div class="w-full md:w-1/4 md:text-right">
+        <h3 class="text-xs font-bold text-gray-900 uppercase tracking-[0.2em] mb-6">
+          Help & About
+        </h3>
+        <ul class="space-y-4">
+          <li>
+            <a href="#" class="text-gray-500 hover:text-gray-900 text-base transition-colors">
+              Our Policies
+            </a>
+          </li>
+          <li>
+            <a href="#" class="text-gray-500 hover:text-gray-900 text-base transition-colors">
+              Contact Us
+            </a>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>` }
+  });
+}
+
+--- components/Section13.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section13() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<footer data-section="Footer" class="bg-white py-16 md:py-24 border-t border-gray-100">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+      <!-- Brand Column -->
+      <div class="flex flex-col justify-between items-start h-full min-h-[10rem]">
+        <img src="./assets/images/91ede9bca7.png" alt="KILRR" class="h-12 w-auto object-contain mb-8 md:mb-0" />
+        <p class="text-xs text-gray-400 tracking-widest mt-auto">© 2025 - KILRR</p>
+      </div>
+
+      <!-- About Column -->
+      <div>
+        <h3 class="text-xs font-semibold text-gray-900 uppercase tracking-[0.2em] mb-6">About Us</h3>
+        <p class="text-gray-500 leading-relaxed text-sm md:text-[15px] max-w-sm">
+          We crave good clean food, but we are also lazy like you all. And, that's why we made these instant marinades.
+        </p>
+      </div>
+
+      <!-- Links Column -->
+      <div class="md:pl-16">
+        <h3 class="text-xs font-semibold text-gray-900 uppercase tracking-[0.2em] mb-6">Help & About</h3>
+        <ul class="flex flex-col space-y-4">
+          <li>
+            <a href="#" class="text-gray-500 hover:text-gray-900 transition-colors text-sm md:text-[15px]">Our Policies</a>
+          </li>
+          <li>
+            <a href="#" class="text-gray-500 hover:text-gray-900 transition-colors text-sm md:text-[15px]">Contact Us</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>` }
+  });
+}
+
+--- components/Section2.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section2() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="GET KILLER DEALS"></section>` }
+  });
+}
+
+--- components/Section3.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section3() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="Announcement Bar" class="w-full bg-[#ffeae5] py-3 overflow-hidden border-b border-[#f0d0c9]">
+  <div class="flex w-full items-center justify-center md:justify-between px-4 space-x-8 whitespace-nowrap">
+    <div class="flex items-center space-x-8">
+      <p class="text-xs font-bold tracking-[0.15em] text-[#c25e46]">FREE SHIPPING OVER ₹399</p>
+      <span class="text-[#c25e46] opacity-60">|</span>
+      <p class="text-xs font-bold tracking-[0.15em] text-[#c25e46]">FREE SHIPPING OVER ₹399</p>
+      <span class="text-[#c25e46] opacity-60">|</span>
+      <p class="text-xs font-bold tracking-[0.15em] text-[#c25e46]">FREE SHIPPING OVER ₹399</p>
+    </div>
+    <div class="hidden md:flex items-center space-x-8">
+      <span class="text-[#c25e46] opacity-60">|</span>
+      <p class="text-xs font-bold tracking-[0.15em] text-[#c25e46]">FREE SHIPPING OVER ₹399</p>
+      <span class="text-[#c25e46] opacity-60">|</span>
+      <p class="text-xs font-bold tracking-[0.15em] text-[#c25e46]">FREE SHIPPING OVER ₹399</p>
+    </div>
+  </div>
+</section>` }
+  });
+}
+
+--- components/Section4.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section4() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="New Flavor Everyday" class="bg-white py-16 font-sans">
+  <div class="container mx-auto px-4 max-w-6xl">
+    <!-- Header -->
+    <h2 class="text-3xl md:text-4xl text-center tracking-[0.2em] uppercase mb-10 text-gray-900">New Flavor Everyday</h2>
+    
+    <!-- Tabs -->
+    <div class="flex justify-center items-center gap-6 mb-20">
+      <!-- Tikka Tab -->
+      <button class="group flex items-center gap-3 bg-[#c25e3e] text-white pl-6 pr-2 py-1.5 rounded-full transition-transform hover:scale-105 shadow-sm">
+        <span class="font-bold tracking-wide text-sm">TIKKAS</span>
+        <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-white/30">
+          <img src="{./assets/images/bcaf3edfec.png}" alt="Tikkas" class="w-full h-full object-cover">
+        </div>
+      </button>
+      
+      <!-- Gravy Tab -->
+      <div class="relative">
+        <div class="absolute -top-3 left-4 bg-[#4a8b3c] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-sm z-10 leading-none tracking-tighter">NEW LAUNCH</div>
+        <button class="group flex items-center gap-3 bg-white border border-gray-300 text-gray-500 pl-6 pr-2 py-1.5 rounded-full transition-transform hover:scale-105 hover:border-gray-400">
+          <span class="font-bold tracking-wide text-sm">GRAVIES</span>
+          <div class="w-10 h-10 rounded-full overflow-hidden border border-gray-200">
+            <img src="{./assets/images/6770cf37a9.png}" alt="Gravies" class="w-full h-full object-cover">
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Product List -->
+    <div class="space-y-24">
+      
+      <!-- Product 1: TANDOORI BLAST -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-center">
+        <div class="space-y-4">
+          <div class="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-50 shadow-sm">
+            <img src="{./assets/images/8bee64915c.png}" alt="Tandoori Blast" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+          </div>
+          <div class="flex gap-3 overflow-x-auto pb-2">
+            <img src="{./assets/images/f8a29418d1.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/5e6236cd69.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/2f3be75642.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/94e3c8408a.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+          </div>
+        </div>
+        <div class="flex flex-col items-start">
+          <h3 class="text-xl font-bold uppercase tracking-wide mb-2 text-gray-900">TANDOORI BLAST</h3>
+          <div class="flex items-center gap-3 mb-4 text-lg">
+            <span class="font-bold text-gray-900">₹69</span>
+            <span class="text-red-400 line-through text-base">₹70</span>
+          </div>
+          <p class="text-gray-600 mb-8 leading-relaxed">Drop a bomb of tandoori flavor on your taste buds.</p>
+          <button class="bg-[#c25e3e] text-white px-8 py-2.5 rounded font-bold uppercase tracking-wide hover:bg-[#a64d30] transition-colors shadow-sm">
+            + ADD
+          </button>
+        </div>
+      </div>
+
+      <!-- Product 2: SAZA-E-KAALIMIRCH -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-center">
+        <div class="space-y-4">
+          <div class="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-50 shadow-sm">
+            <img src="{./assets/images/37401f88bf.png}" alt="Saza-E-Kaalimirch" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+          </div>
+          <div class="flex gap-3 overflow-x-auto pb-2">
+            <img src="{./assets/images/20808bad77.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/c5343ca209.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/f51bd7550b.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/d3c44e0811.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+          </div>
+        </div>
+        <div class="flex flex-col items-start">
+          <h3 class="text-xl font-bold uppercase tracking-wide mb-2 text-gray-900">SAZA-E-KAALIMIRCH</h3>
+          <div class="flex items-center gap-3 mb-4 text-lg">
+            <span class="font-bold text-gray-900">₹69</span>
+            <span class="text-red-400 line-through text-base">₹70</span>
+          </div>
+          <p class="text-gray-600 mb-8 leading-relaxed">Break the barriers of ordinary with this bold, tantalizing flavor.</p>
+          <button class="bg-[#c25e3e] text-white px-8 py-2.5 rounded font-bold uppercase tracking-wide hover:bg-[#a64d30] transition-colors shadow-sm">
+            + ADD
+          </button>
+        </div>
+      </div>
+
+      <!-- Product 3: PAAPI PUDINA -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-center">
+        <div class="space-y-4">
+          <div class="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-50 shadow-sm">
+            <img src="{./assets/images/e1f6f7cd45.png}" alt="Paapi Pudina" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+          </div>
+          <div class="flex gap-3 overflow-x-auto pb-2">
+            <img src="{./assets/images/8219c43ee2.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/a2fd89ac87.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/d5b44f23d6.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/cdfcd22745.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+          </div>
+        </div>
+        <div class="flex flex-col items-start">
+          <h3 class="text-xl font-bold uppercase tracking-wide mb-2 text-gray-900">PAAPI PUDINA</h3>
+          <div class="flex items-center gap-3 mb-4 text-lg">
+            <span class="font-bold text-gray-900">₹69</span>
+            <span class="text-red-400 line-through text-base">₹70</span>
+          </div>
+          <p class="text-gray-600 mb-8 leading-relaxed">The tang hits, world fades & you get caught licking your fingers.</p>
+          <button class="bg-[#c25e3e] text-white px-8 py-2.5 rounded font-bold uppercase tracking-wide hover:bg-[#a64d30] transition-colors shadow-sm">
+            + ADD
+          </button>
+        </div>
+      </div>
+
+      <!-- Product 4: DHANIYA MIRCHI AUR WOH -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-center">
+        <div class="space-y-4">
+          <div class="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-50 shadow-sm">
+            <img src="{./assets/images/f78975083c.png}" alt="Dhaniya Mirchi Aur Woh" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+          </div>
+          <div class="flex gap-3 overflow-x-auto pb-2">
+            <img src="{./assets/images/1befab133d.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/53fadd0317.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/8950a1169c.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/48aebc55e3.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+          </div>
+        </div>
+        <div class="flex flex-col items-start">
+          <h3 class="text-xl font-bold uppercase tracking-wide mb-2 text-gray-900">DHANIYA MIRCHI AUR WOH</h3>
+          <div class="flex items-center gap-3 mb-4 text-lg">
+            <span class="font-bold text-gray-900">₹69</span>
+            <span class="text-red-400 line-through text-base">₹70</span>
+          </div>
+          <p class="text-gray-600 mb-8 leading-relaxed">Is it the herbs, chillies or something out of the world that makes this flavor irresistible? It's a mystery.</p>
+          <button class="bg-[#c25e3e] text-white px-8 py-2.5 rounded font-bold uppercase tracking-wide hover:bg-[#a64d30] transition-colors shadow-sm">
+            + ADD
+          </button>
+        </div>
+      </div>
+
+      <!-- Product 5: GANGS OF AWADH -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-center">
+        <div class="space-y-4">
+          <div class="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-50 shadow-sm">
+            <img src="{./assets/images/47553d85b2.png}" alt="Gangs of Awadh" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+          </div>
+          <div class="flex gap-3 overflow-x-auto pb-2">
+            <img src="{./assets/images/69436da95e.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/6e400c95cb.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/8c53fab112.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/009c709b14.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+          </div>
+        </div>
+        <div class="flex flex-col items-start">
+          <h3 class="text-xl font-bold uppercase tracking-wide mb-2 text-gray-900">GANGS OF AWADH</h3>
+          <div class="flex items-center gap-3 mb-4 text-lg">
+            <span class="font-bold text-gray-900">₹69</span>
+            <span class="text-red-400 line-through text-base">₹70</span>
+          </div>
+          <p class="text-gray-600 mb-8 leading-relaxed">Experience 26 flavor notes come together to create a taste symphony like no other.</p>
+          <button class="bg-[#c25e3e] text-white px-8 py-2.5 rounded font-bold uppercase tracking-wide hover:bg-[#a64d30] transition-colors shadow-sm">
+            + ADD
+          </button>
+        </div>
+      </div>
+
+      <!-- Product 6: SHAWARMA JI KA BETA -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 items-center">
+        <div class="space-y-4">
+          <div class="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-50 shadow-sm">
+            <img src="{./assets/images/fc841e80a7.png}" alt="Shawarma Ji Ka Beta" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+          </div>
+          <div class="flex gap-3 overflow-x-auto pb-2">
+            <img src="{./assets/images/06721bbd8b.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/2415f478f0.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/a5425f301e.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+            <img src="{./assets/images/dd49ccfe30.png}" class="w-16 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:border-[#c25e3e] transition-colors">
+          </div>
+        </div>
+        <div class="flex flex-col items-start">
+          <h3 class="text-xl font-bold uppercase tracking-wide mb-2 text-gray-900">SHAWARMA JI KA BETA</h3>
+          <div class="flex items-center gap-3 mb-4 text-lg">
+            <span class="font-bold text-gray-900">₹69</span>
+            <span class="text-red-400 line-through text-base">₹70</span>
+          </div>
+          <p class="text-gray-600 mb-8 leading-relaxed">Flavor that hits like a late night stroll down a food bazaar.</p>
+          <button class="bg-[#c25e3e] text-white px-8 py-2.5 rounded font-bold uppercase tracking-wide hover:bg-[#a64d30] transition-colors shadow-sm">
+            + ADD
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer Button -->
+    <div class="mt-20 text-center">
+      <button class="bg-[#c25e3e] text-white px-10 py-3 rounded font-bold uppercase tracking-wide hover:bg-[#a64d30] transition-colors shadow-md">
+        SHOW MORE (+5)
+      </button>
+    </div>
+  </div>
+</section>` }
+  });
+}
+
+--- components/Section5.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section5() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="150K+ GANG MEMBERS" class="bg-white py-16 font-sans">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+      <p class="text-orange-600 font-semibold tracking-wider uppercase mb-2">THEY'RE SCREAMING WITH JOY</p>
+      <h2 class="text-4xl md:text-5xl font-bold text-gray-900">150K+ GANG MEMBERS</h2>
+    </div>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+      <!-- Card 1 -->
+      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col h-full shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div class="aspect-[4/3] overflow-hidden bg-gray-100">
+          <img src="./assets/images/e63b0294b5.png" alt="Review by Kaustubh Mathur" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+        </div>
+        <div class="p-4 flex flex-col flex-grow">
+          <h3 class="font-medium text-gray-900 text-base">Kaustubh Mathur</h3>
+          <div class="flex items-center mt-1 mb-3 justify-between">
+            <div class="flex text-orange-500 [&>svg]:w-4 [&>svg]:h-4 [&>svg]:fill-current">
+              <i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i>
+            </div>
+            <span class="text-xs text-gray-500">10/12/2024</span>
+          </div>
+          <h4 class="font-bold text-gray-900 text-sm mb-2">Amazing taste, without effort</h4>
+          <p class="text-gray-600 text-sm leading-relaxed">Worth the money. Tastes so good. Easy to make. So tasty and yummy. Spice-levels are good.</p>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col h-full shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div class="aspect-[4/3] overflow-hidden bg-gray-100">
+          <img src="./assets/images/b9830437c0.png" alt="Review by Sarthak Bhosle" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+        </div>
+        <div class="p-4 flex flex-col flex-grow">
+          <h3 class="font-medium text-gray-900 text-base">Sarthak Bhosle</h3>
+          <div class="flex items-center mt-1 mb-3 justify-between">
+            <div class="flex text-orange-500 [&>svg]:w-4 [&>svg]:h-4 [&>svg]:fill-current">
+              <i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i>
+            </div>
+            <span class="text-xs text-gray-500">02/07/2025</span>
+          </div>
+          <h4 class="font-bold text-gray-900 text-sm mb-2">These flavours are insane.</h4>
+          <p class="text-gray-600 text-sm leading-relaxed">Impulse buy was a win! Not a gimmick. Insanely tasty and easy Indian marinades. Kaalimirch is fire! Just go for it!</p>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col h-full shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div class="aspect-[4/3] overflow-hidden bg-gray-100">
+          <img src="./assets/images/673645b972.png" alt="Review by Om More" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+        </div>
+        <div class="p-4 flex flex-col flex-grow">
+          <h3 class="font-medium text-gray-900 text-base">Om More</h3>
+          <div class="flex items-center mt-1 mb-3 justify-between">
+            <div class="flex text-orange-500 [&>svg]:w-4 [&>svg]:h-4 [&>svg]:fill-current">
+              <i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i>
+            </div>
+            <span class="text-xs text-gray-500">04/06/2025</span>
+          </div>
+          <h4 class="font-bold text-gray-900 text-sm mb-2">Reordering again fs!</h4>
+          <p class="text-gray-600 text-sm leading-relaxed">Mind blown! Tried it on everything (paneer, bhindi, etc.). GF thought I cooked a fancy dinner. Must reorder!</p>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col h-full shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div class="aspect-[4/3] overflow-hidden bg-gray-100">
+          <img src="./assets/images/5fca62ced7.png" alt="Review by Sagar Shinde" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+        </div>
+        <div class="p-4 flex flex-col flex-grow">
+          <h3 class="font-medium text-gray-900 text-base">Sagar Shinde</h3>
+          <div class="flex items-center mt-1 mb-3 justify-between">
+            <div class="flex text-orange-500 [&>svg]:w-4 [&>svg]:h-4 [&>svg]:fill-current">
+              <i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i>
+            </div>
+            <span class="text-xs text-gray-500">14/03/2024</span>
+          </div>
+          <h4 class="font-bold text-gray-900 text-sm mb-2">Unexpected Surprise</h4>
+          <p class="text-gray-600 text-sm leading-relaxed">The flavor is restaurant-grade, trust me! Air-fry chicken thighs for 180/20min for a perfect and delicious result.</p>
+        </div>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col h-full shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div class="aspect-[4/3] overflow-hidden bg-gray-100">
+          <img src="./assets/images/64dc0fe49b.png" alt="Review by Vrinda Paul" class="w-full h-full object-cover transition-transform duration-500 hover:scale-105">
+        </div>
+        <div class="p-4 flex flex-col flex-grow">
+          <h3 class="font-medium text-gray-900 text-base">Vrinda Paul</h3>
+          <div class="flex items-center mt-1 mb-3 justify-between">
+            <div class="flex text-orange-500 [&>svg]:w-4 [&>svg]:h-4 [&>svg]:fill-current">
+              <i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i><i data-icon="Star"></i>
+            </div>
+            <span class="text-xs text-gray-500">21/01/2024</span>
+          </div>
+          <h4 class="font-bold text-gray-900 text-sm mb-2">Flavor Bombs for Chicken Lovers! 🍗🔥</h4>
+          <p class="text-gray-600 text-sm leading-relaxed">Loved the KILRR variety pack! Rich, perfectly balanced flavors. Makes marination super easy and tasty.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>` }
+  });
+}
+
+--- components/Section6.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section6() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="150K+ GANG MEMBERS" class="py-16 bg-white overflow-hidden">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+      <p class="text-[#D9534F] font-medium tracking-wide uppercase mb-2">THEY'RE SCREAMING WITH JOY</p>
+      <h2 class="text-3xl md:text-4xl font-bold text-gray-900">150K+ GANG MEMBERS</h2>
+    </div>
+
+    <div class="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+      <!-- Review 1 -->
+      <div class="min-w-[280px] md:min-w-[320px] bg-white border border-gray-200 rounded-xl overflow-hidden flex-shrink-0 snap-center shadow-sm hover:shadow-md transition-shadow">
+        <div class="h-48 w-full bg-gray-100">
+          <img src="./assets/images/91ede9bca7.png" alt="Review by Kaustubh Mathur" class="w-full h-full object-cover" />
+        </div>
+        <div class="p-5">
+          <h3 class="font-bold text-gray-900 text-lg">Kaustubh Mathur</h3>
+          <div class="flex items-center my-2">
+            <div class="flex text-orange-500">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </div>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed">Worth the money. Tastes so good. Easy to make. So tasty and yummy. Spice-levels are good.</p>
+        </div>
+      </div>
+
+      <!-- Review 2 -->
+      <div class="min-w-[280px] md:min-w-[320px] bg-white border border-gray-200 rounded-xl overflow-hidden flex-shrink-0 snap-center shadow-sm hover:shadow-md transition-shadow">
+        <div class="h-48 w-full bg-gray-100">
+          <img src="./assets/images/91ede9bca7.png" alt="Review by Sarthak Bhosle" class="w-full h-full object-cover" />
+        </div>
+        <div class="p-5">
+          <h3 class="font-bold text-gray-900 text-lg">Sarthak Bhosle</h3>
+          <div class="flex items-center my-2">
+            <div class="flex text-orange-500">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </div>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed">Impulse buy was a win! Not a gimmick. Insanely tasty and easy Indian marinades. Kaalimirch is fire! Just go for it!</p>
+        </div>
+      </div>
+
+      <!-- Review 3 -->
+      <div class="min-w-[280px] md:min-w-[320px] bg-white border border-gray-200 rounded-xl overflow-hidden flex-shrink-0 snap-center shadow-sm hover:shadow-md transition-shadow">
+        <div class="h-48 w-full bg-gray-100">
+          <img src="./assets/images/91ede9bca7.png" alt="Review by Om More" class="w-full h-full object-cover" />
+        </div>
+        <div class="p-5">
+          <h3 class="font-bold text-gray-900 text-lg">Om More</h3>
+          <div class="flex items-center my-2">
+            <div class="flex text-orange-500">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </div>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed">Mind blown! Tried it on everything (paneer, bhindi, etc.). GF thought I cooked a fancy dinner. Must reorder!</p>
+        </div>
+      </div>
+
+      <!-- Review 4 -->
+      <div class="min-w-[280px] md:min-w-[320px] bg-white border border-gray-200 rounded-xl overflow-hidden flex-shrink-0 snap-center shadow-sm hover:shadow-md transition-shadow">
+        <div class="h-48 w-full bg-gray-100">
+          <img src="./assets/images/91ede9bca7.png" alt="Review by Sagar Shinde" class="w-full h-full object-cover" />
+        </div>
+        <div class="p-5">
+          <h3 class="font-bold text-gray-900 text-lg">Sagar Shinde</h3>
+          <div class="flex items-center my-2">
+            <div class="flex text-orange-500">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </div>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed">The flavor is restaurant-grade, trust me! Air-fry chicken thighs for 180/20min for a perfect and delicious result.</p>
+        </div>
+      </div>
+
+      <!-- Review 5 -->
+      <div class="min-w-[280px] md:min-w-[320px] bg-white border border-gray-200 rounded-xl overflow-hidden flex-shrink-0 snap-center shadow-sm hover:shadow-md transition-shadow">
+        <div class="h-48 w-full bg-gray-100">
+          <img src="./assets/images/91ede9bca7.png" alt="Review by Vrinda Paul" class="w-full h-full object-cover" />
+        </div>
+        <div class="p-5">
+          <h3 class="font-bold text-gray-900 text-lg">Vrinda Paul</h3>
+          <div class="flex items-center my-2">
+            <div class="flex text-orange-500">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </div>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed">Loved the KILRR variety pack! Rich, perfectly balanced flavors. Makes marination super easy and tasty.</p>
+        </div>
+      </div>
+
+      <!-- Review 6 -->
+      <div class="min-w-[280px] md:min-w-[320px] bg-white border border-gray-200 rounded-xl overflow-hidden flex-shrink-0 snap-center shadow-sm hover:shadow-md transition-shadow">
+        <div class="h-48 w-full bg-gray-100">
+          <img src="./assets/images/91ede9bca7.png" alt="Review by Diksha Dutta" class="w-full h-full object-cover" />
+        </div>
+        <div class="p-5">
+          <h3 class="font-bold text-gray-900 text-lg">Diksha Dutta</h3>
+          <div class="flex items-center my-2">
+            <div class="flex text-orange-500">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </div>
+          </div>
+          <p class="text-gray-600 text-sm leading-relaxed">I absolutely loved this chicken masala! The aroma is rich and instantly reminds you of traditional Indian kitchens.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>` }
+  });
+}
+
+--- components/Section7.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section7() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="Slay The Mess" class="w-full bg-white py-12 md:py-16">
+  <div class="container mx-auto px-4 mb-8 md:mb-12 text-center">
+    <p class="text-[#D9534F] font-medium tracking-widest uppercase text-sm md:text-base mb-3">
+      A KILRR IDEA THAT'LL CHANGE YOUR LIFE
+    </p>
+    <h2 class="text-3xl md:text-4xl lg:text-5xl font-sans text-black uppercase tracking-wide">
+      SLAY THE MESS, SAVOR THE TASTE
+    </h2>
+  </div>
+
+  <div class="relative w-full max-w-[1920px] mx-auto h-[400px] md:h-[500px] lg:h-[600px] flex overflow-hidden select-none">
+    <!-- Left Side: The Mess -->
+    <div class="relative w-1/2 h-full overflow-hidden">
+      <img 
+        src="./assets/images/06081bb5de.png" 
+        alt="Messy ingredients preparation" 
+        class="absolute inset-0 w-full h-full object-cover object-center" 
+      />
+    </div>
+
+    <!-- Right Side: The Solution -->
+    <div class="relative w-1/2 h-full overflow-hidden">
+      <img 
+        src="./assets/images/fd2e6dd86e.png" 
+        alt="Clean product packaging" 
+        class="absolute inset-0 w-full h-full object-cover object-center" 
+      />
+    </div>
+
+    <!-- Center Slider Handle Visual -->
+    <div class="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white -translate-x-1/2 z-10 shadow-sm"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+      <div class="w-12 h-12 md:w-14 md:h-14 bg-[#1a1a1a] rounded-full flex items-center justify-center shadow-xl text-white border-2 border-white">
+        <div class="flex items-center gap-0.5">
+          <i data-icon="ChevronLeft"></i>
+          <i data-icon="ChevronRight"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>` }
+  });
+}
+
+--- components/Section8.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section8() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="announcement-bar" class="w-full bg-gray-900 text-white py-2.5">
+  <div class="container mx-auto px-4 flex justify-center items-center">
+    <p class="text-xs md:text-sm font-medium tracking-wider uppercase text-center">
+      FREE SHIPPING OVER ₹399
+    </p>
+  </div>
+</section>` }
+  });
+}
+
+--- components/Section9.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+export default function Section9() {
+  return React.createElement('div', {
+    dangerouslySetInnerHTML: { __html: `<section data-section="Need More Evidence" class="bg-white py-16 px-4 md:px-8">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-2xl md:text-3xl font-medium text-center mb-12 tracking-widest uppercase text-gray-900">
+      Need More Evidence?
+    </h2>
+    <div class="border-t border-gray-200">
+      <details class="group border-b border-gray-200">
+        <summary class="flex justify-between items-center py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-gray-800 hover:text-gray-600 transition-colors">
+          <span class="text-lg font-normal">What's in each pack?</span>
+          <span class="text-gray-500 transition-transform duration-300 group-open:rotate-45">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-5 text-gray-600 leading-relaxed">
+          <p>Each pack contains a precise blend of premium spices and ingredients required for the dish, pre-measured for your convenience.</p>
+        </div>
+      </details>
+      <details class="group border-b border-gray-200">
+        <summary class="flex justify-between items-center py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-gray-800 hover:text-gray-600 transition-colors">
+          <span class="text-lg font-normal">How do I cook?</span>
+          <span class="text-gray-500 transition-transform duration-300 group-open:rotate-45">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-5 text-gray-600 leading-relaxed">
+          <p>Simply follow the easy step-by-step instructions printed on the back of the pack. Most recipes are ready in under 30 minutes.</p>
+        </div>
+      </details>
+      <details class="group border-b border-gray-200">
+        <summary class="flex justify-between items-center py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-gray-800 hover:text-gray-600 transition-colors">
+          <span class="text-lg font-normal">What's the shelf life?</span>
+          <span class="text-gray-500 transition-transform duration-300 group-open:rotate-45">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-5 text-gray-600 leading-relaxed">
+          <p>Our products typically have a shelf life of 9-12 months when stored in a cool, dry place away from direct sunlight.</p>
+        </div>
+      </details>
+      <details class="group border-b border-gray-200">
+        <summary class="flex justify-between items-center py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-gray-800 hover:text-gray-600 transition-colors">
+          <span class="text-lg font-normal">How much chicken per pack?</span>
+          <span class="text-gray-500 transition-transform duration-300 group-open:rotate-45">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-5 text-gray-600 leading-relaxed">
+          <p>One pack is generally sufficient for 500g to 1kg of chicken, depending on the specific recipe and desired intensity.</p>
+        </div>
+      </details>
+      <details class="group border-b border-gray-200">
+        <summary class="flex justify-between items-center py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-gray-800 hover:text-gray-600 transition-colors">
+          <span class="text-lg font-normal">What if I need to make more?</span>
+          <span class="text-gray-500 transition-transform duration-300 group-open:rotate-45">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-5 text-gray-600 leading-relaxed">
+          <p>You can easily scale up the recipe by using multiple packs and increasing the amount of fresh ingredients proportionally.</p>
+        </div>
+      </details>
+      <details class="group border-b border-gray-200">
+        <summary class="flex justify-between items-center py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-gray-800 hover:text-gray-600 transition-colors">
+          <span class="text-lg font-normal">Why not buy pre-marinated chicken?</span>
+          <span class="text-gray-500 transition-transform duration-300 group-open:rotate-45">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-5 text-gray-600 leading-relaxed">
+          <p>Cooking with fresh ingredients ensures superior texture and taste compared to pre-marinated options that may have been sitting for days.</p>
+        </div>
+      </details>
+      <details class="group border-b border-gray-200">
+        <summary class="flex justify-between items-center py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden text-gray-800 hover:text-gray-600 transition-colors">
+          <span class="text-lg font-normal">What about other flavor masalas?</span>
+          <span class="text-gray-500 transition-transform duration-300 group-open:rotate-45">
+            <i data-icon="Plus"></i>
+          </span>
+        </summary>
+        <div class="pb-5 text-gray-600 leading-relaxed">
+          <p>We offer a wide variety of regional and classic flavors. Browse our full collection to discover more authentic taste experiences.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>` }
+  });
+}
+
+--- fonts.css ---
+@font-face{font-family:__Inter_f367f3;font-style:normal;font-weight:100 900;font-display:swap;src:url(/_next/static/media/ba9851c3c22cd980-s.woff2) format("woff2");unicode-range:u+0460-052f,u+1c80-1c8a,u+20b4,u+2de0-2dff,u+a640-a69f,u+fe2e-fe2f}
+
+@font-face{font-family:__Inter_f367f3;font-style:normal;font-weight:100 900;font-display:swap;src:url(/_next/static/media/21350d82a1f187e9-s.woff2) format("woff2");unicode-range:u+0301,u+0400-045f,u+0490-0491,u+04b0-04b1,u+2116}
+
+@font-face{font-family:__Inter_f367f3;font-style:normal;font-weight:100 900;font-display:swap;src:url(/_next/static/media/c5fe6dc8356a8c31-s.woff2) format("woff2");unicode-range:u+1f??}
+
+@font-face{font-family:__Inter_f367f3;font-style:normal;font-weight:100 900;font-display:swap;src:url(/_next/static/media/19cfc7226ec3afaa-s.woff2) format("woff2");unicode-range:u+0370-0377,u+037a-037f,u+0384-038a,u+038c,u+038e-03a1,u+03a3-03ff}
+
+@font-face{font-family:__Inter_f367f3;font-style:normal;font-weight:100 900;font-display:swap;src:url(/_next/static/media/df0a9ae256c0569c-s.woff2) format("woff2");unicode-range:u+0102-0103,u+0110-0111,u+0128-0129,u+0168-0169,u+01a0-01a1,u+01af-01b0,u+0300-0301,u+0303-0304,u+0308-0309,u+0323,u+0329,u+1ea0-1ef9,u+20ab}
+
+@font-face{font-family:__Inter_f367f3;font-style:normal;font-weight:100 900;font-display:swap;src:url(/_next/static/media/8e9860b6e62d6359-s.woff2) format("woff2");unicode-range:u+0100-02ba,u+02bd-02c5,u+02c7-02cc,u+02ce-02d7,u+02dd-02ff,u+0304,u+0308,u+0329,u+1d00-1dbf,u+1e00-1e9f,u+1ef2-1eff,u+2020,u+20a0-20ab,u+20ad-20c0,u+2113,u+2c60-2c7f,u+a720-a7ff}
+
+@font-face{font-family:__Inter_f367f3;font-style:normal;font-weight:100 900;font-display:swap;src:url(/_next/static/media/e4af272ccee01ff0-s.p.woff2) format("woff2");unicode-range:u+00??,u+0131,u+0152-0153,u+02bb-02bc,u+02c6,u+02da,u+02dc,u+0304,u+0308,u+0329,u+2000-206f,u+20ac,u+2122,u+2191,u+2193,u+2212,u+2215,u+feff,u+fffd}
+
+@font-face{font-family:__Inter_Fallback_f367f3;src:local("Arial");ascent-override:90.49%;descent-override:22.56%;line-gap-override:0.00%;size-adjust:107.06%}
+
+@font-face{font-family:DIN Neuzeit Grotesk;src:url(/kilrr/fonts/din-1.woff2) format("woff2");font-display:swap;font-style:normal}
+
+@font-face{font-family:Futura;src:url(/kilrr/fonts/futura-1.woff2) format("woff2");font-display:swap;font-style:normal}
+
+@font-face{font-family:Futura;src:url(/kilrr/fonts/futura-2.woff2) format("woff2");font-display:swap;font-style:normal}
+
+@font-face{font-family:Futura;src:url(/kilrr/fonts/futura-3.woff2) format("woff2");font-display:swap;font-style:normal}
+
+@font-face{font-family:Futura;src:url(/kilrr/fonts/FuturaStd-Bold.woff2) format("woff2");font-weight:700;font-display:swap;font-style:normal}
+
+@font-face{font-family:Futura Bk BT;src:url(/kilrr/fonts/futubk.ttf) format("truetype");font-weight:400;font-display:swap;font-style:normal}
+
+@font-face{font-family:Futura Hv BT;src:url(/kilrr/fonts/FuturaHeavyBT.ttf) format("truetype");font-weight:900;font-display:swap;font-style:normal}
+
+@font-face{font-family:Futura Md BT;src:url(/kilrr/fonts/futura-20medium-20bt.ttf) format("truetype");font-weight:500;font-display:swap;font-style:normal}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2ZL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1pL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2pL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2ZL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1pL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2pL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2ZL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1pL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2pL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2ZL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1pL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2pL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa0ZL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2ZL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1pL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2pL7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7W0Q5n-wU.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+--- index.html ---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generated App</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./fonts.css">
+  <script>window.__ASSETS__ = window.__ASSETS__ || {}; window.__SECTIONS__ = window.__SECTIONS__ || [];</script>
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18?dev&target=es2018",
+      "react-dom/client": "https://esm.sh/react-dom@18/client?dev&target=es2018",
+      "lucide-react": "https://esm.sh/lucide-react@0.555.0?deps=react@18,react-dom@18&dev&target=es2018"
+    }
+  }
+  </script>
+    <link data-injected-by="checker-asset-scan" rel="stylesheet" href="./fonts.css">
+    <link data-injected-by="checker-asset-scan" rel="stylesheet" href="./typography.css">
+    <link data-injected-by="checker-asset-scan" rel="preload" href="./assets/fonts/62f478e2c2.woff2" as="font" type="font/woff2" crossorigin>
+    <link data-injected-by="checker-asset-scan" rel="preload" href="./assets/fonts/7528c83bac.ttf" as="font" type="font/ttf" crossorigin>
+    <link data-injected-by="checker-asset-scan" rel="preload" href="./assets/fonts/16fecc9aa9.ttf" as="font" type="font/ttf" crossorigin>
+    <link data-injected-by="checker-asset-scan" rel="preload" href="./assets/fonts/8b5ebbd2f0.ttf" as="font" type="font/ttf" crossorigin>
+    <link data-injected-by="checker-asset-scan" rel="preload" href="./assets/fonts/2ae63fe926.woff2" as="font" type="font/woff2" crossorigin>
+    <link data-injected-by="checker-asset-scan" rel="preload" href="./assets/fonts/d827476250.woff2" as="font" type="font/woff2" crossorigin>
+    <link data-injected-by="checker-asset-scan" rel="preload" href="./assets/fonts/c2f0acf27d.woff2" as="font" type="font/woff2" crossorigin>
+    <script data-injected-by="checker-asset-scan">window.__ASSET_MANIFEST__ = {"images":{"https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FBanner_with_review.webp%3Fv%3D1764857553&w=1920&q=80":"./assets/images/91ede9bca7.png","https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FKILRR_logo_final.avif&w=256&q=75":"./assets/images/1f223ac12b.png","https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FhomePageImages%2F2_-_Hero_Web_Banner_Desktop.webp&w=1920&q=85":"./assets/images/3b124f78c6.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Fcollections%2FWhatsApp_Image_2025-10-30_at_3.40.01_PM.jpg%3Fv%3D1761819154&w=64&q=75":"./assets/images/6770cf37a9.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Fcollections%2FWhatsApp_Image_2025-10-30_at_3.38.05_PM.jpg%3Fv%3D1762153484&w=64&q=75":"./assets/images/bcaf3edfec.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FTandoori-WebProductCarousel.webp%3Fv%3D1757579731&w=640&q=85":"./assets/images/37401f88bf.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Tandoori_-_Web_Product_Carousel.webp%3Fv%3D1729920083&w=640&q=85":"./assets/images/8bee64915c.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Tandoori_-_Web_Product_Carousel.webp%3Fv%3D1729920083&w=64&q=75":"./assets/images/f8a29418d1.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F02_Tandoori_-_Web_Product_Carousel.webp%3Fv%3D1757579731&w=640&q=85":"./assets/images/e1f6f7cd45.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F03_Tandoori_-_Web_Product_Carousel.webp%3Fv%3D1757579731&w=640&q=85":"./assets/images/f78975083c.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FTandoori-WebProductCarousel.webp%3Fv%3D1757579731&w=64&q=75":"./assets/images/5e6236cd69.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F02_Tandoori_-_Web_Product_Carousel.webp%3Fv%3D1757579731&w=64&q=75":"./assets/images/2f3be75642.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F03_Tandoori_-_Web_Product_Carousel.webp%3Fv%3D1757579731&w=64&q=75":"./assets/images/94e3c8408a.png","https://www.google.com/pagead/1p-user-list/438894555/?random=1764917726397&cv=11&fst=1764914400000&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45je5c31v9169011415za200zd9169011415xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528500~104684208~104684211~105391253~115583767~115938465~115938468~116184927~116184929~116217636~116217638~116678529~116682875&u_w=1280&u_h=720&url=https%3A%2F%2Fshop.kilrr.com%2F&frm=0&tiba=KILRR%20%7C%20Get%20killer%20taste%20with%20zero%20fuss&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=292342490.1764917726&uaa=arm&uab=64&uafvl=HeadlessChrome%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0%7CChromium%3B141.0.7390.37&uamb=0&uam=&uap=macOS&uapv=26.1.0&uaw=0&data=event%3Dgtag.config&rfmt=3&fmt=3&is_vtc=1&cid=CAQSfwDCSxrRHHayI9roewDMYjfJM5SMKJes1_T6bKxxJB2WYPirm4HCFDKc_aYXkLrHDS9TofHhq5EzGwzUVrrV4D-lT-bgfMPfiZ6BS_K28oUccM49H7kRNOvH-AoOWgIxL_sFFFPFx4AkQ7qTUDJAN-UoDLdatdrRrVrov2qlfyY&random=1577882220&rmt_tld=0&ipr=y":"./assets/images/7e76bbbc6a.gif","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Kali_Mirch_-_Web_Product_Carousel.webp%3Fv%3D1729920125&w=640&q=85":"./assets/images/47553d85b2.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F02_Kali_Mirch_-_Web_Product_Carousel.webp%3Fv%3D1729920125&w=640&q=85":"./assets/images/fc841e80a7.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F03_Kali_Mirch_-_Web_Product_Carousel.webp%3Fv%3D1729920125&w=640&q=85":"./assets/images/e8663f41c3.png","https://www.google.co.in/pagead/1p-user-list/438894555/?random=1764917726397&cv=11&fst=1764914400000&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45je5c31v9169011415za200zd9169011415xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528500~104684208~104684211~105391253~115583767~115938465~115938468~116184927~116184929~116217636~116217638~116678529~116682875&u_w=1280&u_h=720&url=https%3A%2F%2Fshop.kilrr.com%2F&frm=0&tiba=KILRR%20%7C%20Get%20killer%20taste%20with%20zero%20fuss&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=292342490.1764917726&uaa=arm&uab=64&uafvl=HeadlessChrome%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0%7CChromium%3B141.0.7390.37&uamb=0&uam=&uap=macOS&uapv=26.1.0&uaw=0&data=event%3Dgtag.config&rfmt=3&fmt=3&is_vtc=1&cid=CAQSfwDCSxrRHHayI9roewDMYjfJM5SMKJes1_T6bKxxJB2WYPirm4HCFDKc_aYXkLrHDS9TofHhq5EzGwzUVrrV4D-lT-bgfMPfiZ6BS_K28oUccM49H7kRNOvH-AoOWgIxL_sFFFPFx4AkQ7qTUDJAN-UoDLdatdrRrVrov2qlfyY&random=1577882220&rmt_tld=1&ipr=y":"./assets/images/f089b7233d.gif","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FKaliMirch-WebProductCarousel.webp%3Fv%3D1757579815&w=640&q=85":"./assets/images/edb0bd1360.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F02_Kali_Mirch_-_Web_Product_Carousel.webp%3Fv%3D1729920125&w=64&q=75":"./assets/images/c5343ca209.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Kali_Mirch_-_Web_Product_Carousel.webp%3Fv%3D1729920125&w=64&q=75":"./assets/images/20808bad77.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FKaliMirch-WebProductCarousel.webp%3Fv%3D1757579815&w=64&q=75":"./assets/images/d3c44e0811.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F03_Kali_Mirch_-_Web_Product_Carousel.webp%3Fv%3D1729920125&w=64&q=75":"./assets/images/f51bd7550b.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F03-PaapiPudina-WebProductCarousel.webp%3Fv%3D1744792100&w=640&q=85":"./assets/images/cac0fcf75e.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01-PaapiPudina-Moodshot_web.webp%3Fv%3D1744792100&w=640&q=85":"./assets/images/e5948e9067.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F02-PaapiPudina-WebProductCarousel.webp%3Fv%3D1744792100&w=640&q=85":"./assets/images/0b6946f434.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Tandoori_-_Web_Product_Carousel.webp%3Fv%3D1729920083&w=256&q=75":"./assets/images/2fe97aa2e5.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Afghani_-_Web_Product_Carousel.webp%3Fv%3D1729920235&w=256&q=75":"./assets/images/d42a7cae89.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Kali_Mirch_-_Web_Product_Carousel.webp%3Fv%3D1729920125&w=256&q=75":"./assets/images/ae0b4b11ab.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Dhaniya_-_Web_Product_Carousel.webp%3Fv%3D1729920204&w=256&q=75":"./assets/images/e8ee4d81c4.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Lucknowi_-_Web_Product_Carousel.webp%3Fv%3D1729920269&w=256&q=75":"./assets/images/375f699ed2.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Awadhi_-_Web_Product_Carousel.webp%3Fv%3D1729919958&w=256&q=75":"./assets/images/9805cdae79.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F04-AchaariPudina_Web-NutritinalInfo_Ingredients.webp%3Fv%3D1751771788&w=640&q=85":"./assets/images/44474c97eb.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F04-AchaariPudina_Web-NutritinalInfo_Ingredients.webp%3Fv%3D1751771788&w=64&q=75":"./assets/images/cdfcd22745.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Dhaniya_-_Web_Product_Carousel.webp%3Fv%3D1729920204&w=640&q=85":"./assets/images/1a7d73102c.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F03-PaapiPudina-WebProductCarousel.webp%3Fv%3D1744792100&w=64&q=75":"./assets/images/d5b44f23d6.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F02-PaapiPudina-WebProductCarousel.webp%3Fv%3D1744792100&w=64&q=75":"./assets/images/a2fd89ac87.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01-PaapiPudina-Moodshot_web.webp%3Fv%3D1744792100&w=64&q=75":"./assets/images/8219c43ee2.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F03_Dhaniya_-_Web_Product_Carousel.webp%3Fv%3D1729920204&w=640&q=85":"./assets/images/54cfe34106.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F02_Dhaniya_-_Web_Product_Carousel.webp%3Fv%3D1729920204&w=640&q=85":"./assets/images/ce17942610.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Dhaniya_-_Web_Product_Carousel.webp%3Fv%3D1729920204&w=64&q=75":"./assets/images/1befab133d.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Pesto_-_Web_Product_Carousel.webp%3Fv%3D1729920300&w=256&q=75":"./assets/images/b146a77330.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FDhaniya-WebProductCarousel.webp%3Fv%3D1757580371&w=640&q=85":"./assets/images/34368f5c5a.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Peri_Peri_-_Web_Product_Carousel.webp%3Fv%3D1741681007&w=256&q=75":"./assets/images/22fd2df249.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F03_Dhaniya_-_Web_Product_Carousel.webp%3Fv%3D1729920204&w=64&q=75":"./assets/images/8950a1169c.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FDhaniya-WebProductCarousel.webp%3Fv%3D1757580371&w=64&q=75":"./assets/images/48aebc55e3.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F02_Dhaniya_-_Web_Product_Carousel.webp%3Fv%3D1729920204&w=64&q=75":"./assets/images/53fadd0317.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F02_Awadhi_-_Web_Product_Carousel.webp%3Fv%3D1729919958&w=640&q=85":"./assets/images/156cfc932c.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Awadhi_-_Web_Product_Carousel.webp%3Fv%3D1729919958&w=640&q=85":"./assets/images/a4f1e17947.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F03_Awadhi_-_Web_Product_Carousel.webp%3Fv%3D1729919958&w=640&q=85":"./assets/images/c610f5f78c.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Awadhi_-_Web_Product_Carousel.webp%3Fv%3D1729919958&w=64&q=75":"./assets/images/69436da95e.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FAwadhiWebProductCarousel_1.webp%3Fv%3D1735448060&w=640&q=85":"./assets/images/8eed9b5f8e.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F02_Awadhi_-_Web_Product_Carousel.webp%3Fv%3D1729919958&w=64&q=75":"./assets/images/6e400c95cb.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F03_Awadhi_-_Web_Product_Carousel.webp%3Fv%3D1729919958&w=64&q=75":"./assets/images/8c53fab112.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FAwadhiWebProductCarousel_1.webp%3Fv%3D1735448060&w=64&q=75":"./assets/images/009c709b14.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FShawarma-WebProductCarousel01.webp%3Fv%3D1757583202&w=640&q=85":"./assets/images/efbabe3856.png","https://www.gstatic.com/images/branding/googlelogo/1x/googlelogo_color_42x16dp.png":"./assets/images/830a73d04c.png","https://www.gstatic.com/images/branding/product/2x/translate_24dp.png":"./assets/images/ca713ea75c.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FWhatsAppImage2025-09-11at3.19.06PM.jpg%3Fv%3D1757584254&w=64&q=75":"./assets/images/a5425f301e.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FShawarmaWebProductCarousel-NutritionalInfo.webp%3Fv%3D1757583202&w=640&q=85":"./assets/images/6e6adfbd0e.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FShawarmaWebProductCarousel.webp%3Fv%3D1757583203&w=64&q=75":"./assets/images/2415f478f0.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FShawarmaWebProductCarousel.webp%3Fv%3D1757583203&w=640&q=85":"./assets/images/51acae48b0.png","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FShawarma-WebProductCarousel01.webp%3Fv%3D1757583202&w=64&q=75":"./assets/images/06721bbd8b.png","https://fonts.gstatic.com/s/i/productlogos/translate/v14/24px.svg":"./assets/images/a93b5dfde6.svg","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FShawarmaWebProductCarousel-NutritionalInfo.webp%3Fv%3D1757583202&w=64&q=75":"./assets/images/dd49ccfe30.png","https://www.google.com/pagead/1p-user-list/438894555/?random=1764917727880&cv=11&fst=1764914400000&bg=ffffff&guid=ON&async=1&en=shopify_page_view&gtm=45je5c31v9169011415za200zd9169011415xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528500~104684208~104684211~105391253~115583767~115938465~115938468~116184927~116184929~116217636~116217638~116678529~116682875&u_w=1280&u_h=720&url=https%3A%2F%2Fshop.kilrr.com%2F&frm=0&tiba=KILRR%20%7C%20Get%20killer%20taste%20with%20zero%20fuss&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=292342490.1764917726&uaa=arm&uab=64&uafvl=HeadlessChrome%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0%7CChromium%3B141.0.7390.37&uamb=0&uam=&uap=macOS&uapv=26.1.0&uaw=0&data=event%3Dshopify_page_view%3BeventId%3D1764917727873_s5zhhs_shopify_page_view&rfmt=3&fmt=3&is_vtc=1&cid=CAQSjQEAwksa0ZoRYnnFw0kKwE8dKO8iV4xe7PiPM2hXDgOivTK5ZaG8b6QRZAGrRDLslBkkFwzJRSWxfWkLfj_aQf8aMriTko6TsY8La-wLcrpPnggILWYXN0FDjdMU-ttkchHqo3HHILAT8nr3UkdFX2UcBu20WN0SgfcyYQaN3SOu4JhWudjbZcCEbpddecM&random=2681526070&rmt_tld=0&ipr=y":"./assets/images/3a96de2667.gif","https://www.google.co.in/pagead/1p-user-list/438894555/?random=1764917727880&cv=11&fst=1764914400000&bg=ffffff&guid=ON&async=1&en=shopify_page_view&gtm=45je5c31v9169011415za200zd9169011415xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528500~104684208~104684211~105391253~115583767~115938465~115938468~116184927~116184929~116217636~116217638~116678529~116682875&u_w=1280&u_h=720&url=https%3A%2F%2Fshop.kilrr.com%2F&frm=0&tiba=KILRR%20%7C%20Get%20killer%20taste%20with%20zero%20fuss&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=292342490.1764917726&uaa=arm&uab=64&uafvl=HeadlessChrome%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0%7CChromium%3B141.0.7390.37&uamb=0&uam=&uap=macOS&uapv=26.1.0&uaw=0&data=event%3Dshopify_page_view%3BeventId%3D1764917727873_s5zhhs_shopify_page_view&rfmt=3&fmt=3&is_vtc=1&cid=CAQSjQEAwksa0ZoRYnnFw0kKwE8dKO8iV4xe7PiPM2hXDgOivTK5ZaG8b6QRZAGrRDLslBkkFwzJRSWxfWkLfj_aQf8aMriTko6TsY8La-wLcrpPnggILWYXN0FDjdMU-ttkchHqo3HHILAT8nr3UkdFX2UcBu20WN0SgfcyYQaN3SOu4JhWudjbZcCEbpddecM&random=2681526070&rmt_tld=1&ipr=y":"./assets/images/bb304f70fb.gif","https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FWhatsAppImage2025-09-11at3.19.06PM.jpg%3Fv%3D1757584254&w=640&q=85":"./assets/images/30dac6869c.png","https://pdp.gokwik.co/assets/icons/gokwik_gif.gif":"./assets/images/3dac073ea5.gif","https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FhomePageImages%2Freview-2.webp&w=384&q=75":"./assets/images/b9830437c0.png","https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FhomePageImages%2Freview-3.webp&w=384&q=75":"./assets/images/673645b972.png","https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FhomePageImages%2Freview-5.webp&w=384&q=75":"./assets/images/31eea7a719.png","https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FhomePageImages%2Freview-6.webp&w=384&q=75":"./assets/images/64dc0fe49b.png","https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FhomePageImages%2Freview-4.webp&w=384&q=75":"./assets/images/5fca62ced7.png","https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FhomePageImages%2Freview-1.webp&w=384&q=75":"./assets/images/e63b0294b5.png","https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FhomePageImages%2Fbefore-654343625ad8d.webp&w=1920&q=85":"./assets/images/06081bb5de.png","https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FhomePageImages%2Fafter-6543435d0017d.webp&w=1920&q=85":"./assets/images/fd2e6dd86e.png","https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FKILRR_logo_final.avif&w=256&q=90":"./assets/images/7a70d27de3.png"},"fonts":{"https://shop.kilrr.com/kilrr/fonts/din-1.woff2":"./assets/fonts/62f478e2c2.woff2","https://shop.kilrr.com/kilrr/fonts/futura-20medium-20bt.ttf":"./assets/fonts/7528c83bac.ttf","https://shop.kilrr.com/kilrr/fonts/futubk.ttf":"./assets/fonts/16fecc9aa9.ttf","https://shop.kilrr.com/kilrr/fonts/FuturaHeavyBT.ttf":"./assets/fonts/8b5ebbd2f0.ttf","https://shop.kilrr.com/kilrr/fonts/futura-3.woff2":"./assets/fonts/2ae63fe926.woff2","https://shop.kilrr.com/_next/static/media/e4af272ccee01ff0-s.p.woff2":"./assets/fonts/d827476250.woff2","https://shop.kilrr.com/kilrr/fonts/FuturaStd-Bold.woff2":"./assets/fonts/c2f0acf27d.woff2"},"icons":[]};</script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
+
+--- main.js ---
+import React from 'https://esm.sh/react@18?dev&target=es2018';
+import { createRoot } from 'https://esm.sh/react-dom@18/client?dev&target=es2018';
+import App from './App.js';
+import Section0 from './components/Section0.js';
+import Section1 from './components/Section1.js';
+import Section2 from './components/Section2.js';
+import Section3 from './components/Section3.js';
+import Section4 from './components/Section4.js';
+import Section5 from './components/Section5.js';
+import Section6 from './components/Section6.js';
+import Section7 from './components/Section7.js';
+import Section8 from './components/Section8.js';
+import Section9 from './components/Section9.js';
+import Section10 from './components/Section10.js';
+import Section11 from './components/Section11.js';
+import Section12 from './components/Section12.js';
+import Section13 from './components/Section13.js';
+
+window.__SECTIONS__ = [Section0, Section1, Section2, Section3, Section4, Section5, Section6, Section7, Section8, Section9, Section10, Section11, Section12, Section13];
+
+const mount = () => {
+  const container = document.getElementById('root');
+  const root = createRoot(container);
+  const sections = Array.isArray(window.__SECTIONS__) ? window.__SECTIONS__ : [];
+  root.render(React.createElement(App, { sections }));
+};
+
+// After mount, hydrate any <i data-icon="IconName"> placeholders using lucide-react
+const hydrateIcons = async () => {
+  try {
+    const Icons = await import('https://esm.sh/lucide-react@0.555.0?deps=react@18,react-dom@18&dev&target=es2018');
+    const placeholders = Array.from(document.querySelectorAll('i[data-icon]'));
+    for (const el of placeholders) {
+      const name = el.getAttribute('data-icon') || 'Circle';
+      const Comp = Icons[name] || Icons['Circle'];
+      if (!Comp) continue;
+      const tmp = document.createElement('span');
+      el.replaceWith(tmp);
+      const r = createRoot(tmp);
+      r.render(React.createElement(Comp, { width: 20, height: 20 }));
+    }
+  } catch {}
+};
+
+// Attach image fallback handler: if any <img> fails to load, swap to first manifest image
+const attachImageFallbacks = () => {
+  const pickFallback = () => {
+    try {
+      const mani = (window.__ASSET_MANIFEST__ && window.__ASSET_MANIFEST__.images) || {};
+      const vals = Object.values(mani);
+      return vals.length ? vals[0] : null;
+    } catch { return null; }
+  };
+  document.querySelectorAll('img').forEach(img => {
+    img.onerror = () => {
+      const fb = pickFallback();
+      if (fb && img.src !== fb) img.src = fb;
+    };
+  });
+};
+
+mount();
+hydrateIcons();
+attachImageFallbacks();
+
+
+--- typography.css ---
+body {
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: normal;
+  color: rgb(45, 55, 72);
+  background-color: rgb(255, 255, 255);
+}
+
+p {
+  font-family: "DIN Neuzeit Grotesk", sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 19.25px;
+  letter-spacing: 1.98px;
+  color: rgb(255, 255, 255);
+  background-color: rgba(0, 0, 0, 0);
+}
+
+h2 {
+  font-family: "DIN Neuzeit Grotesk", sans-serif;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 38.4px;
+  letter-spacing: 5.76px;
+  color: rgb(48, 48, 48);
+  background-color: rgba(0, 0, 0, 0);
+}
+
+h3 {
+  font-family: "DIN Neuzeit Grotesk", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 14.4px;
+  letter-spacing: 2.16px;
+  color: rgb(48, 48, 48);
+  background-color: rgba(0, 0, 0, 0);
+}
+
+h4 {
+  font-family: Inter, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 14.4px;
+  letter-spacing: normal;
+  color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0);
+}

@@ -376,7 +376,7 @@ $(document).ready(function() {
   var loanAmount = 240000;
   var interestRate = 7.61;
   var loanTerm = 30;
-  var homePrice = 300000;
+  var homePrice = 3000000;
   var downPayment = 60000;
   var propertyTax = 3750;
   var homeInsurance = 1050;
@@ -587,7 +587,7 @@ $(document).ready(function() {
   var loanAmount = 240000;
   var interestRate = 7.61;
   var loanTerm = 30;
-  var homePrice = 300000;
+  var homePrice = 3000000;
   var downPayment = 60000;
   var propertyTax = 3750;
   var homeInsurance = 1050;

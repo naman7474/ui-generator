@@ -1,0 +1,39 @@
+{
+  "baseOrigin": "https://shop.kilrr.com",
+  "linkBehavior": "external",
+  "routes": [
+    [
+      "https://shop.kilrr.com",
+      {
+        "originalUrl": "https://shop.kilrr.com",
+        "normalizedUrl": "https://shop.kilrr.com",
+        "route": "/",
+        "componentName": "HomePage",
+        "pageTitle": "KILRR | Get killer taste with zero fuss",
+        "isGenerated": true
+      }
+    ],
+    [
+      "https://shop.kilrr.com/pages/our-policies",
+      {
+        "originalUrl": "https://shop.kilrr.com/pages/our-policies",
+        "normalizedUrl": "https://shop.kilrr.com/pages/our-policies",
+        "route": "/pages/our-policies",
+        "componentName": "PagesOurPoliciesPage",
+        "pageTitle": "OUR POLICIES",
+        "isGenerated": true
+      }
+    ],
+    [
+      "https://shop.kilrr.com/pages/contact-us",
+      {
+        "originalUrl": "https://shop.kilrr.com/pages/contact-us",
+        "normalizedUrl": "https://shop.kilrr.com/pages/contact-us",
+        "route": "/pages/contact-us",
+        "componentName": "PagesContactUsPage",
+        "pageTitle": "Contact Us",
+        "isGenerated": true
+      }
+    ]
+  ]
+}

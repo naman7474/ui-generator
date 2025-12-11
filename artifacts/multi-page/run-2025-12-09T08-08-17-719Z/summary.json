@@ -1,0 +1,54 @@
+{
+  "jobId": "run-2025-12-09T08-08-17-719Z",
+  "entryUrl": "https://bblunt.com",
+  "summary": {
+    "totalPages": 3,
+    "successfulPages": 0,
+    "averageSimilarity": 0,
+    "minSimilarity": 0,
+    "maxSimilarity": 0
+  },
+  "pages": [
+    {
+      "path": "home",
+      "url": "https://bblunt.com",
+      "success": false,
+      "similarity": 0.34488281249999997,
+      "siteDir": "artifacts/multi-page/run-2025-12-09T08-08-17-719Z/pages/home",
+      "localUrl": "http://localhost:3000/artifacts/pixelgen-v2/run-2025-12-09T08-08-34-279Z/site/index.html"
+    },
+    {
+      "path": "pages/shine-squad-get999",
+      "url": "https://bblunt.com/pages/shine-squad-get999",
+      "success": false,
+      "similarity": 0.46180121527777773,
+      "siteDir": "artifacts/multi-page/run-2025-12-09T08-08-17-719Z/pages/pages/shine-squad-get999",
+      "localUrl": "http://localhost:3000/artifacts/pixelgen-v2/run-2025-12-09T08-22-56-212Z/site/index.html"
+    },
+    {
+      "path": "collections/all",
+      "url": "https://bblunt.com/collections/all",
+      "success": false,
+      "similarity": 0.43316514756944446,
+      "siteDir": "artifacts/multi-page/run-2025-12-09T08-08-17-719Z/pages/collections/all",
+      "localUrl": "http://localhost:3000/artifacts/pixelgen-v2/run-2025-12-09T08-41-27-109Z/site/index.html"
+    }
+  ],
+  "routes": [
+    {
+      "path": "/",
+      "component": "HomePage",
+      "title": "BBlunt: Buy Any 3 Products at ₹999 | Use Code GET999"
+    },
+    {
+      "path": "/pages/shine-squad-get999",
+      "component": "Pages/shineSquadGet999Page",
+      "title": "shine-squad-get999 – BBlunt"
+    },
+    {
+      "path": "/collections/all",
+      "component": "Collections/allPage",
+      "title": "All – BBlunt"
+    }
+  ]
+}

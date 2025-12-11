@@ -60,4 +60,16 @@ export const config = {
     bucket: process.env.SUPABASE_BUCKET ?? 'artifacts',
   },
   googleApiKey: process.env.GOOGLE_API_KEY,
+  multiPage: {
+    maxPages: numberFromEnv(process.env.MULTI_PAGE_MAX_PAGES, 5),
+    targetSimilarity: Number(process.env.MULTI_PAGE_TARGET_SIMILARITY ?? '0.90'),
+    defaultExcludePatterns: (process.env.MULTI_PAGE_EXCLUDE_PATTERNS ?? '/cart,/checkout,/account/*,/login,/register,/wishlist,/search')
+      .split(',')
+      .map(p => p.trim())
+      .filter(Boolean),
+    // 'extract' = extract from home page, 'generate-once' = generate shared components once and reuse
+    sharedComponentStrategy: (process.env.MULTI_PAGE_SHARED_STRATEGY ?? 'extract') as 'extract' | 'generate-once',
+    // 'external' = keep original URL, 'placeholder' = show placeholder page, 'disable' = make non-clickable
+    linkBehavior: (process.env.MULTI_PAGE_LINK_BEHAVIOR ?? 'external') as 'external' | 'placeholder' | 'disable',
+  },
 };

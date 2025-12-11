@@ -1,0 +1,392 @@
+const Section3 = () => {
+  const [hoveredProduct, setHoveredProduct] = React.useState(null);
+
+  const StarIcon = () => (
+    <svg className="w-3 h-3 text-yellow-400 fill-current" viewBox="0 0 24 24">
+      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+    </svg>
+  );
+
+  const ProductCard = ({ product }) => {
+    const isHovered = hoveredProduct === product.id;
+
+    return (
+      <div 
+        className="flex flex-col h-full bg-white group relative"
+        onMouseEnter={() => setHoveredProduct(product.id)}
+        onMouseLeave={() => setHoveredProduct(null)}
+      >
+        {/* Image Container */}
+        <div className="relative w-full aspect-square overflow-hidden bg-gray-50 mb-3">
+          {/* Badge */}
+          {product.badge && (
+            <span 
+              className={`absolute top-0 left-0 z-10 text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wide
+                ${product.badge === 'Best Seller' ? 'bg-[#ff4f4f]' : ''}
+                ${product.badge === 'Trending' ? 'bg-[#84cc16]' : ''}
+                ${product.badge === 'New Launch' ? 'bg-[#84cc16]' : ''}
+              `}
+            >
+              {product.badge}
+            </span>
+          )}
+
+          {/* Sold Out Overlay */}
+          {product.isSoldOut && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/5">
+              <div className="bg-white/90 rounded-full w-20 h-20 flex items-center justify-center shadow-sm">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-center px-2 leading-tight">Sold Out</span>
+              </div>
+            </div>
+          )}
+
+          {/* Images */}
+          <a href={product.link || "#"} className="block w-full h-full">
+            <img 
+              src={product.img1} 
+              alt={product.title} 
+              className={`absolute inset-0 w-full h-full object-contain mix-blend-multiply transition-opacity duration-500 ${isHovered ? 'opacity-0' : 'opacity-100'}`}
+            />
+            <img 
+              src={product.img2} 
+              alt={product.title} 
+              className={`absolute inset-0 w-full h-full object-contain mix-blend-multiply transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+            />
+          </a>
+        </div>
+
+        {/* Content */}
+        <div className="flex flex-col flex-grow px-1">
+          <a href={product.link || "#"} className="block">
+            <h3 className="text-[13px] font-bold text-gray-900 leading-tight min-h-[3em] line-clamp-2">
+              {product.title}
+            </h3>
+          </a>
+          
+          <p className="text-[11px] text-[#0056b3] mt-1 leading-snug min-h-[2.5em]">
+            {product.subtitle}
+          </p>
+
+          {/* Rating */}
+          <div className="flex items-center mt-2 mb-1">
+            <StarIcon />
+            <span className="text-[11px] font-medium ml-1 text-gray-700">{product.rating}</span>
+            <span className="mx-1 text-gray-300">|</span>
+            <span className="text-[11px] text-gray-500">{product.reviews}</span>
+          </div>
+
+          {/* Size */}
+          <div className="text-[11px] text-gray-500 mb-1">
+            {product.size}
+          </div>
+
+          {/* Price & Button */}
+          <div className="mt-auto pt-1">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[15px] font-bold text-gray-900">₹{product.price}</span>
+              {product.originalPrice && (
+                <>
+                  <span className="text-[13px] text-gray-500 line-through">₹{product.originalPrice}</span>
+                  <span className="text-[13px] text-[#ff4f4f] font-medium">{product.discount} off</span>
+                </>
+              )}
+            </div>
+
+            <button 
+              className={`w-full py-3 text-[13px] font-bold uppercase tracking-wider transition-colors duration-300 rounded-sm
+                ${product.isSoldOut 
+                  ? 'bg-black text-white hover:bg-gray-800' 
+                  : 'bg-black text-white hover:bg-gray-800'
+                }`}
+            >
+              {product.buttonText || "Add to cart"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const bffs = [
+    {
+      id: 1,
+      img1: "./assets/img-7.jpg",
+      img2: "./assets/img-8.jpg",
+      badge: "Best Seller",
+      title: "Hot Shot Heat Protection Mist with Grapeseed Oil & Provitamin B5 - 150 ml",
+      subtitle: "Prevents Damage | Upto 230° Celsius Protection",
+      rating: "4.7",
+      reviews: "270",
+      price: "499",
+      size: "150ml",
+      link: "/collections/all"
+    },
+    {
+      id: 2,
+      img1: "./assets/img-9.jpg",
+      img2: "./assets/img-10.jpg",
+      badge: "Best Seller",
+      title: "Hair Fall Control Shampoo with Pea Protein & Caffeine for Stronger Hair - 300 ml",
+      subtitle: "Reduces Up to 93% Hair Fall| Adds Shine",
+      rating: "4.8",
+      reviews: "542",
+      price: "355",
+      size: "300ml",
+      link: "/collections/all"
+    },
+    {
+      id: 3,
+      img1: "./assets/img-11.jpg",
+      img2: "./assets/img-12.jpg",
+      badge: "Best Seller",
+      title: "Hair Fall Control Conditioner for Stronger Hair - 250 g",
+      subtitle: "Reduces Up to 93% Hair Fall| Softens Hair & Adds Shine",
+      rating: "4.8",
+      reviews: "332",
+      price: "399",
+      size: "250g",
+      link: "/collections/all"
+    },
+    {
+      id: 4,
+      img1: "./assets/img-13.jpg",
+      img2: "./assets/img-14.jpg",
+      badge: "Best Seller",
+      title: "7 in 1 Repair & Revive Hair Mask for Upto 100% Damage Repair - 250g",
+      subtitle: "Addresses 7 Signs of Hair Damage | Enriched with Ceramides & Argan Oil",
+      rating: "4.7",
+      reviews: "261",
+      price: "499",
+      size: "250g",
+      link: "/collections/all"
+    }
+  ];
+
+  const hairFall = [
+    {
+      id: 5,
+      img1: "./assets/img-31.jpg",
+      img2: "./assets/img-32.jpg",
+      badge: "Trending",
+      title: "Hair Fall Control Scalp Hair Tonic 50 ml",
+      subtitle: "Controls Hair Fall | Improves Hair Growth",
+      rating: "4.9",
+      reviews: "119",
+      price: "499",
+      size: "50ml",
+      link: "/collections/all"
+    },
+    {
+      id: 6,
+      img1: "./assets/img-33.jpg",
+      img2: "./assets/img-34.jpg",
+      badge: null,
+      title: "Hair Fall Control Heat Hair Spa Mask with Pea Protein & Caffeine for Salon-Like Hair...",
+      subtitle: "Salon-Like Hair Spa in Just 5 Minutes* | Reduces Hair Fall & Strengthens Hair",
+      rating: "4.8",
+      reviews: "32",
+      price: "349",
+      size: "70g",
+      link: "/collections/all"
+    },
+    {
+      id: 7,
+      img1: "./assets/img-35.jpg",
+      img2: "./assets/img-36.jpg",
+      badge: "Best Seller",
+      title: "Hair Fall Control Shampoo & Conditioner Combo for Stronger Hair",
+      subtitle: "Controls Hair Fall | Strengthens & Nourishes Hair",
+      rating: "4.8",
+      reviews: "392",
+      price: "566",
+      originalPrice: "754",
+      discount: "25%",
+      size: "Pack of 2",
+      link: "/collections/all"
+    },
+    {
+      id: 8,
+      img1: "./assets/img-37.jpg",
+      img2: "./assets/img-38.jpg",
+      badge: "Best Seller",
+      title: "Hair Fall Control Trio",
+      subtitle: "Reduces Hair Fall | Strengthens Hair | Enriched with Shine Tonic",
+      rating: "4.7",
+      reviews: "96",
+      price: "940",
+      originalPrice: "1,253",
+      discount: "25%",
+      size: "Pack of 3",
+      link: "/collections/all"
+    }
+  ];
+
+  const partyReady = [
+    {
+      id: 9,
+      img1: "./assets/img-46.jpg",
+      img2: "./assets/img-47.jpg",
+      badge: "Trending",
+      title: "Hot Shot Finish Spray For Radiant Shine - 200 ml",
+      subtitle: "Adds Shine | Lends Hair Glossy Finish",
+      rating: "4.5",
+      reviews: "82",
+      price: "599",
+      size: "200ml",
+      link: "/collections/all"
+    },
+    {
+      id: 10,
+      img1: "./assets/img-48.jpg",
+      img2: "./assets/img-49.jpg",
+      badge: null,
+      title: "Refresh Dry Shampoo to Instantly Refresh & Add Volume - 150 ml",
+      subtitle: "Benzene-Free | Leaves No Residue",
+      rating: "4.8",
+      reviews: "54",
+      price: "577",
+      size: "150ml",
+      isSoldOut: true,
+      buttonText: "View product",
+      link: "/collections/all"
+    },
+    {
+      id: 11,
+      img1: "./assets/img-50.jpg",
+      img2: "./assets/img-51.jpg",
+      badge: "New Launch",
+      title: "Refresh Dry Shampoo to Instantly Refresh & Add Volume - 50 ml",
+      subtitle: "Travel-Friendly | Benzene-Free | Leaves No Residue",
+      rating: "4.7",
+      reviews: "32",
+      price: "310",
+      size: "50ml",
+      link: "/collections/all"
+    },
+    {
+      id: 12,
+      img1: "./assets/img-52.jpg",
+      img2: "./assets/img-53.jpg",
+      badge: "Best Seller",
+      title: "Hot Shot Stylist In a Bottle Combo",
+      subtitle: "Protects from Heat Damage | Keeps Hairstyle Intact",
+      rating: "5.0",
+      reviews: "81",
+      price: "824",
+      originalPrice: "1,098",
+      discount: "25%",
+      size: "Pack of 2",
+      link: "/collections/all"
+    }
+  ];
+
+  const color = [
+    {
+      id: 13,
+      img1: "./assets/img-27.jpg",
+      img2: "./assets/img-28.jpg",
+      badge: "New Launch",
+      title: "High Shine Conditioning Hair Colour - Coffee Natural Brown (Shade 4.31)",
+      subtitle: "Intense High Shine Hair Colour at Home | Colour Outside, Care Inside | Powered by MaliPeptide...",
+      rating: "4.6",
+      reviews: "89",
+      price: "399",
+      size: "130g",
+      link: "/collections/all"
+    },
+    {
+      id: 14,
+      img1: "./assets/img-21.jpg",
+      img2: "./assets/img-22.jpg",
+      badge: "New Launch",
+      title: "High Shine Conditioning Hair Colour - Chocolate Dark Brown (Shade 3)",
+      subtitle: "Intense High Shine Hair Colour at Home | Colour Outside, Care Inside | Powered by MaliPeptide...",
+      rating: "4.6",
+      reviews: "80",
+      price: "399",
+      size: "130g",
+      link: "/collections/all"
+    },
+    {
+      id: 15,
+      img1: "./assets/img-66.jpg",
+      img2: "./assets/img-67.jpg",
+      badge: "New Launch",
+      title: "High Shine Conditioning Hair Colour - Honey Light Golden Brown (Shade 5.32)",
+      subtitle: "Intense High Shine Hair Colour at Home | Colour Outside, Care Inside | Powered by MaliPeptide...",
+      rating: "4.4",
+      reviews: "72",
+      price: "399",
+      size: "130g",
+      link: "/collections/all"
+    },
+    {
+      id: 16,
+      img1: "./assets/img-68.jpg",
+      img2: "./assets/img-69.jpg",
+      badge: "New Launch",
+      title: "High Shine Conditioning Hair Colour - Mahogany Reddish Brown (Shade 4.56)",
+      subtitle: "Intense High Shine Hair Colour at Home | Colour Outside, Care Inside | Powered by MaliPeptide...",
+      rating: "5.0",
+      reviews: "1",
+      price: "399",
+      size: "130g",
+      link: "/collections/all"
+    }
+  ];
+
+  return (
+    <main data-section="hair-care-bffs" className="w-full bg-white">
+      {/* Hero Banner */}
+      <div className="w-full">
+        <img src="./assets/img-1.jpg" alt="BBlunt Moisture Marvels" className="w-full h-auto object-cover" />
+      </div>
+
+      <div className="max-w-[1360px] mx-auto px-4 py-12 space-y-20">
+        {/* Section 1 */}
+        <section>
+          <h2 className="text-[32px] font-medium text-center mb-12 text-black">Hair Care BFFs</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
+            {bffs.map(product => <ProductCard key={product.id} product={product} />)}
+          </div>
+        </section>
+
+        {/* Section 2 */}
+        <section>
+          <h2 className="text-[32px] font-medium text-center mb-12 text-black">For Hair Fall Control</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
+            {hairFall.map(product => <ProductCard key={product.id} product={product} />)}
+          </div>
+        </section>
+
+        {/* Section 3 */}
+        <section>
+          <h2 className="text-[32px] font-medium text-center mb-12 text-black">For Party Ready Hair at Home</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
+            {partyReady.map(product => <ProductCard key={product.id} product={product} />)}
+          </div>
+        </section>
+
+        {/* Section 4 */}
+        <section>
+          <h2 className="text-[32px] font-medium text-center mb-12 text-black">Salon Secret High Shine Creme Hair Colour</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
+            {color.map(product => <ProductCard key={product.id} product={product} />)}
+          </div>
+        </section>
+      </div>
+
+      {/* Chat Widget */}
+      <div className="fixed bottom-6 right-6 z-50 flex items-end flex-col gap-2">
+        <div className="bg-white px-4 py-2 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.1)] text-sm font-medium mb-2 relative mr-2 animate-bounce">
+          Hey, lets chat
+          <div className="absolute -bottom-1 right-4 w-3 h-3 bg-white transform rotate-45"></div>
+          <button className="absolute -top-2 -right-2 bg-gray-100 hover:bg-gray-200 rounded-full w-5 h-5 flex items-center justify-center text-[10px] text-gray-500">✕</button>
+        </div>
+        <button className="bg-white rounded-full shadow-lg overflow-hidden w-14 h-14 flex items-center justify-center hover:scale-105 transition-transform">
+           <img src="./assets/img-86.png" alt="Chat" className="w-8 h-8 object-contain" />
+        </button>
+      </div>
+    </main>
+  );
+};

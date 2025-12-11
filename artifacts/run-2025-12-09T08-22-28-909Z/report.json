@@ -1,0 +1,209 @@
+{
+  "runId": "run-2025-12-09T08-22-28-909Z",
+  "timestamps": {
+    "generatedAt": "2025-12-09T08:22:43.438Z"
+  },
+  "outputDir": "artifacts/run-2025-12-09T08-22-28-909Z",
+  "base": {
+    "url": "https://bblunt.com",
+    "label": "base",
+    "screenshot": "base.png",
+    "timing": {
+      "loadTimeMs": 1986.6999999284744,
+      "domContentLoadedMs": 1726.5,
+      "responseEndMs": 1235.6999999284744,
+      "raw": {
+        "name": "https://bblunt.com/?_ab=0&_fd=0&_sc=1&pb=0",
+        "entryType": "navigation",
+        "startTime": 0,
+        "duration": 1986.6999999284744,
+        "initiatorType": "navigation",
+        "deliveryType": "",
+        "nextHopProtocol": "h3",
+        "renderBlockingStatus": "non-blocking",
+        "workerStart": 0,
+        "workerRouterEvaluationStart": 0,
+        "workerCacheLookupStart": 0,
+        "workerMatchedSourceType": "",
+        "workerFinalSourceType": "",
+        "redirectStart": 0.09999990463256836,
+        "redirectEnd": 393.89999997615814,
+        "fetchStart": 393.89999997615814,
+        "domainLookupStart": 393.89999997615814,
+        "domainLookupEnd": 393.89999997615814,
+        "connectStart": 393.89999997615814,
+        "secureConnectionStart": 393.89999997615814,
+        "connectEnd": 393.89999997615814,
+        "requestStart": 394.39999997615814,
+        "responseStart": 1127.7999999523163,
+        "firstInterimResponseStart": 0,
+        "finalResponseHeadersStart": 1127.7999999523163,
+        "responseEnd": 1235.6999999284744,
+        "transferSize": 89972,
+        "encodedBodySize": 89672,
+        "decodedBodySize": 841366,
+        "responseStatus": 200,
+        "serverTiming": [
+          {
+            "name": "processing",
+            "duration": 344,
+            "description": "gc:18"
+          },
+          {
+            "name": "db",
+            "duration": 69,
+            "description": ""
+          },
+          {
+            "name": "db_async",
+            "duration": 6.108,
+            "description": ""
+          },
+          {
+            "name": "render",
+            "duration": 164,
+            "description": ""
+          },
+          {
+            "name": "asn",
+            "duration": 0,
+            "description": "10029"
+          },
+          {
+            "name": "edge",
+            "duration": 0,
+            "description": "DEL"
+          },
+          {
+            "name": "country",
+            "duration": 0,
+            "description": "IN"
+          },
+          {
+            "name": "theme",
+            "duration": 0,
+            "description": "144854581326"
+          },
+          {
+            "name": "pageType",
+            "duration": 0,
+            "description": "index"
+          },
+          {
+            "name": "servedBy",
+            "duration": 0,
+            "description": "nlbw"
+          },
+          {
+            "name": "requestID",
+            "duration": 0,
+            "description": "2deeb36b-7fe6-4187-8006-c581e93b70de-1765268550"
+          },
+          {
+            "name": "_y",
+            "duration": 0,
+            "description": "7d77f862-bc08-43f5-914a-960430fd490e"
+          },
+          {
+            "name": "_s",
+            "duration": 0,
+            "description": "da48c01b-fc3b-457d-81db-a2d9770b9da4"
+          },
+          {
+            "name": "_cmp",
+            "duration": 0,
+            "description": "3.AMPS_INDL_f_f_i15MaJJfTQi0OzTco4yRXw_%7B%7D"
+          },
+          {
+            "name": "cfRequestDuration",
+            "duration": 702.99983,
+            "description": ""
+          },
+          {
+            "name": "cfExtPri",
+            "duration": 0,
+            "description": ""
+          }
+        ],
+        "unloadEventStart": 1145.8999999761581,
+        "unloadEventEnd": 1146.5,
+        "domInteractive": 1632,
+        "domContentLoadedEventStart": 1710.8999999761581,
+        "domContentLoadedEventEnd": 1726.5,
+        "domComplete": 1982.3999999761581,
+        "loadEventStart": 1982.5,
+        "loadEventEnd": 1986.6999999284744,
+        "type": "navigate",
+        "redirectCount": 1,
+        "activationStart": 0,
+        "criticalCHRestart": 0,
+        "notRestoredReasons": null
+      }
+    }
+  },
+  "target": {
+    "url": "http://localhost:3000/artifacts/pixelgen-v2/run-2025-12-09T08-08-34-279Z/site/index.html",
+    "label": "current",
+    "screenshot": "current.png",
+    "timing": {
+      "loadTimeMs": 525.6999999284744,
+      "domContentLoadedMs": 525.6000000238419,
+      "responseEndMs": 1.600000023841858,
+      "raw": {
+        "name": "http://localhost:3000/artifacts/pixelgen-v2/run-2025-12-09T08-08-34-279Z/site/index.html",
+        "entryType": "navigation",
+        "startTime": 0,
+        "duration": 525.6999999284744,
+        "initiatorType": "navigation",
+        "deliveryType": "",
+        "nextHopProtocol": "http/1.1",
+        "renderBlockingStatus": "non-blocking",
+        "workerStart": 0,
+        "workerRouterEvaluationStart": 0,
+        "workerCacheLookupStart": 0,
+        "workerMatchedSourceType": "",
+        "workerFinalSourceType": "",
+        "redirectStart": 0,
+        "redirectEnd": 0,
+        "fetchStart": 0,
+        "domainLookupStart": 0.2999999523162842,
+        "domainLookupEnd": 0.2999999523162842,
+        "connectStart": 0.2999999523162842,
+        "secureConnectionStart": 0,
+        "connectEnd": 0.5,
+        "requestStart": 0.5,
+        "responseStart": 1.399999976158142,
+        "firstInterimResponseStart": 0,
+        "finalResponseHeadersStart": 1.399999976158142,
+        "responseEnd": 1.600000023841858,
+        "transferSize": 17118,
+        "encodedBodySize": 16818,
+        "decodedBodySize": 16818,
+        "responseStatus": 200,
+        "serverTiming": [],
+        "unloadEventStart": 0,
+        "unloadEventEnd": 0,
+        "domInteractive": 514.3999999761581,
+        "domContentLoadedEventStart": 514.3999999761581,
+        "domContentLoadedEventEnd": 525.6000000238419,
+        "domComplete": 525.6999999284744,
+        "loadEventStart": 525.6999999284744,
+        "loadEventEnd": 525.6999999284744,
+        "type": "navigate",
+        "redirectCount": 0,
+        "activationStart": 0,
+        "criticalCHRestart": 0,
+        "notRestoredReasons": null
+      }
+    }
+  },
+  "diff": {
+    "diffPixels": 603756,
+    "totalPixels": 921600,
+    "similarity": 0.34488281249999997,
+    "diffImage": "diff.png"
+  },
+  "styleDiff": {
+    "differences": []
+  }
+}

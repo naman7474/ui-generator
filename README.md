@@ -72,7 +72,7 @@ Frontend UI is served from `/public` when the server is running: open `http://lo
   "options": {
     "threshold": 0.1,
     "waitUntil": "networkidle",
-    "navigationTimeoutMs": 30000,
+    "navigationTimeoutMs": 300000,
     "viewport": { "width": 1280, "height": 720 }
   }
 }

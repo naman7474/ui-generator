@@ -1,0 +1,16 @@
+{
+  "iteration": 1,
+  "similarity": 0.49823021722265326,
+  "improvement": 0.026398249612102465,
+  "appliedCount": 8,
+  "changes": [
+    "color: rgb(26, 26, 26)",
+    "color: rgb(157, 157, 157)",
+    "color: rgb(26, 26, 26)",
+    "font-family: \"NVIDIA Sans\", sans-",
+    "font-family: \"NVIDIA Sans\", sans-",
+    "margin-bottom: -1px",
+    "margin-bottom: -1px",
+    "color: rgb(26, 26, 26)"
+  ]
+}

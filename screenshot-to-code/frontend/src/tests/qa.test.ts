@@ -22,9 +22,9 @@ describe.skip("e2e tests", () => {
   const stacks = Object.values(Stack).slice(0, DEBUG ? 1 : undefined);
   const models = DEBUG
     ? [
-        CodeGenerationModel.GPT_4O_2024_05_13,
-        // CodeGenerationModel.CLAUDE_4_5_SONNET_2025_09_29,
-      ]
+      CodeGenerationModel.GPT_4O_2024_05_13,
+      // CodeGenerationModel.CLAUDE_4_5_SONNET_2025_09_29,
+    ]
     : Object.values(CodeGenerationModel);
 
   beforeAll(async () => {
@@ -192,7 +192,7 @@ class App {
     await this.page.waitForFunction(
       (version) => document.body.innerText.includes(version),
       {
-        timeout: 30000,
+        timeout: 300000,
       },
       version
     );

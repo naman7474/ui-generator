@@ -1,0 +1,16 @@
+{
+  "iteration": 1,
+  "similarity": 0.6023077105462822,
+  "improvement": -0.06315386511496268,
+  "appliedCount": 8,
+  "changes": [
+    "border-color: rgba(29, 29, 29, 0.1",
+    "color: rgb(29, 29, 29)",
+    "color: rgb(29, 29, 29)",
+    "font-family: Roboto, sans-serif",
+    "font-family: Roboto, sans-serif",
+    "padding-right: 0px",
+    "margin-top: 32px",
+    "border-radius: 0px"
+  ]
+}

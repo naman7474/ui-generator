@@ -1,0 +1,16 @@
+{
+  "iteration": 2,
+  "similarity": 0.6571324416733708,
+  "improvement": -0.04129688757039407,
+  "appliedCount": 8,
+  "changes": [
+    "color: rgb(45, 55, 72)",
+    "color: rgb(45, 55, 72)",
+    "color: rgb(45, 55, 72)",
+    "font-family: Futura, sans-serif",
+    "font-size: 16px",
+    "gap: 20px",
+    "padding-top: 20px",
+    "border-radius: 6px"
+  ]
+}

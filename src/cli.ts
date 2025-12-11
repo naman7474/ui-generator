@@ -14,7 +14,12 @@ const program = new Command();
 
 program
   .name('checker')
-  .description('Visual and performance comparison checker for two URLs')
+  .description('Visual and performance comparison checker for two URLs');
+
+// Compare command (default action for backward compatibility)
+const compareCmd = program
+  .command('compare', { isDefault: true })
+  .description('Compare two URLs visually and for performance')
   .requiredOption('-b, --base <url>', 'Base (production) URL')
   .requiredOption('-t, --target <url>', 'Target (candidate) URL')
   .option('--base-label <name>', 'Label for base capture', 'base')
@@ -36,7 +41,7 @@ program
   .option('--include <globs>', 'Comma-separated include patterns for crawl (e.g. /blog/*,/products/**)', (v) => v.split(',').map((s) => s.trim()).filter(Boolean))
   .option('--exclude <globs>', 'Comma-separated exclude patterns for crawl', (v) => v.split(',').map((s) => s.trim()).filter(Boolean));
 
-program.action(async (opts) => {
+compareCmd.action(async (opts) => {
   try {
     const sharedOptions = {
       outputDir: opts.out,
@@ -103,5 +108,72 @@ program.action(async (opts) => {
     process.exit(1);
   }
 });
+
+// Generate command for multi-page website generation
+program
+  .command('generate')
+  .description('Generate a replica website from a source URL')
+  .requiredOption('-u, --url <url>', 'Source website URL to replicate')
+  .option('--multi-page', 'Enable multi-page generation (crawl and generate multiple pages)', false)
+  .option('--max-pages <number>', 'Maximum pages to generate (default 5)', (v) => Number(v), config.multiPage.maxPages)
+  .option('--include <globs>', 'Comma-separated include patterns (e.g. /blog/*,/products/**)', (v) => v.split(',').map((s) => s.trim()).filter(Boolean))
+  .option('--exclude <globs>', 'Comma-separated exclude patterns', (v) => v.split(',').map((s) => s.trim()).filter(Boolean))
+  .option('--target-similarity <number>', 'Target similarity threshold 0-1 (default 0.90)', (v) => Number(v), config.multiPage.targetSimilarity)
+  .option('--device <device>', 'Device type: desktop or mobile', 'desktop')
+  .option('--max-iterations <number>', 'Max iterations per page (default 10)', (v) => Number(v), 10)
+  .action(async (opts) => {
+    try {
+      if (opts.multiPage) {
+        // Multi-page generation
+        const { runMultiPageGeneration } = await import('./multi-page-orchestrator');
+
+        console.log('\n🚀 Starting multi-page website generation...\n');
+
+        const result = await runMultiPageGeneration({
+          entryUrl: opts.url,
+          maxPages: opts.maxPages,
+          includePatterns: opts.include || [],
+          excludePatterns: opts.exclude || config.multiPage.defaultExcludePatterns,
+          targetSimilarity: opts.targetSimilarity,
+          maxIterationsPerPage: opts.maxIterations,
+          device: opts.device as 'desktop' | 'mobile',
+        });
+
+        console.log('\n═══════════════════════════════════════════════════════════');
+        console.log('MULTI-PAGE GENERATION COMPLETE');
+        console.log('═══════════════════════════════════════════════════════════\n');
+        console.log(`Job ID: ${result.jobId}`);
+        console.log(`Output Directory: ${result.siteDir}`);
+        console.log(`Entry URL: ${result.entryLocalUrl}`);
+        console.log(`Pages Generated: ${result.summary.successfulPages}/${result.summary.totalPages}`);
+        console.log(`Average Similarity: ${(result.summary.averageSimilarity * 100).toFixed(1)}%`);
+        console.log(`Success: ${result.success ? '✓' : '✗'}\n`);
+      } else {
+        // Single-page generation
+        const { runPixelGenV2 } = await import('./pixelgen-v2');
+
+        console.log('\n🚀 Starting single-page website generation...\n');
+
+        const result = await runPixelGenV2({
+          baseUrl: opts.url,
+          maxIterations: opts.maxIterations,
+          targetSimilarity: opts.targetSimilarity,
+          device: opts.device as 'desktop' | 'mobile',
+        });
+
+        console.log('\n═══════════════════════════════════════════════════════════');
+        console.log('GENERATION COMPLETE');
+        console.log('═══════════════════════════════════════════════════════════\n');
+        console.log(`Output Directory: ${result.siteDir}`);
+        console.log(`Local URL: ${result.localUrl}`);
+        console.log(`Final Similarity: ${(result.finalSimilarity * 100).toFixed(1)}%`);
+        console.log(`Iterations: ${result.iterations}`);
+        console.log(`Success: ${result.success ? '✓' : '✗'}\n`);
+      }
+    } catch (err) {
+      console.error('Generation failed:', err instanceof Error ? err.message : err);
+      process.exit(1);
+    }
+  });
 
 program.parseAsync(process.argv);

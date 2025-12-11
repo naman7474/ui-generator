@@ -65,7 +65,7 @@ export const extractGroundTruth = async (
     const page = await context.newPage();
 
     try {
-        await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+        await page.goto(url, { waitUntil: 'networkidle', timeout: 300000 });
         await page.waitForTimeout(1500);
     } catch (e) {
         console.warn(`[Extractor] Navigation warning: ${e}`);

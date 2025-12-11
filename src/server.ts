@@ -340,6 +340,70 @@ app.post('/pixelgen/v2/run', async (req, res) => {
   }
 });
 
+// Multi-page generation endpoint
+app.post('/pixelgen/multi-page/run', async (req, res) => {
+  const multiPageSchema = z.object({
+    entryUrl: z.string().url(),
+    maxPages: z.number().int().positive().max(20).optional(),
+    includePatterns: z.array(z.string()).optional(),
+    excludePatterns: z.array(z.string()).optional(),
+    targetSimilarity: z.number().min(0).max(1).optional(),
+    maxIterationsPerPage: z.number().int().positive().max(20).optional(),
+    device: z.enum(['desktop', 'mobile']).optional(),
+  });
+
+  const parsed = multiPageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.flatten() });
+  }
+
+  await runGate(res, async () => {
+    try {
+      // @ts-ignore
+      const { runMultiPageGeneration } = await import('./multi-page-orchestrator');
+      const result = await runMultiPageGeneration(parsed.data);
+
+      // Try to get public artifacts URL
+      try {
+        const artifactsUrl = await storage.artifactsUrl(result.siteDir);
+        if (artifactsUrl) {
+          (result as any).artifactsUrl = artifactsUrl;
+        }
+      } catch { }
+
+      res.json(result);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Unknown error' });
+    }
+  });
+});
+
+// SPA fallback for multi-page assembled apps
+// Routes like /pages/our-policies should serve the assembled app's index.html
+app.get(/^\/pages\/(.*)/, async (req, res, next) => {
+  // Find the most recent multi-page run to serve
+  try {
+    const multiPageDir = path.join(config.outputDir, 'multi-page');
+    const runs = await fs.readdir(multiPageDir).catch(() => []);
+    if (runs.length === 0) {
+      return next();
+    }
+    // Get most recent run
+    const sortedRuns = runs.sort().reverse();
+    const latestRun = sortedRuns[0];
+    const assembledIndex = path.join(multiPageDir, latestRun, 'assembled', 'index.html');
+    try {
+      await fs.access(assembledIndex);
+      return res.sendFile(assembledIndex);
+    } catch {
+      return next();
+    }
+  } catch {
+    return next();
+  }
+});
+
 app.post('/admin/cleanup', async (req, res) => {
   const daysParam = Number(req.query.days ?? config.retentionDays);
   const days = Number.isFinite(daysParam) ? daysParam : config.retentionDays;

@@ -83,6 +83,7 @@ export interface PixelGenV2Options {
     changesPerIteration?: number;
     device?: 'desktop' | 'mobile';
     useLLMRefinement?: boolean;
+    routeMap?: Record<string, string>;  // Original path → route for link generation
 }
 
 // ============================================================================
@@ -96,7 +97,8 @@ export const runPixelGenV2 = async (options: PixelGenV2Options) => {
         targetSimilarity = 0.95,
         changesPerIteration = 8,
         device = 'desktop',
-        useLLMRefinement = true
+        useLLMRefinement = true,
+        routeMap
     } = options;
 
     const jobId = timestampId();
@@ -112,7 +114,7 @@ export const runPixelGenV2 = async (options: PixelGenV2Options) => {
     let structureMatchRate: number;
 
     try {
-        const genResult = await generateInitialSiteWithStructure(baseUrl);
+        const genResult = await generateInitialSiteWithStructure(baseUrl, true, routeMap);
         siteDir = genResult.siteDir;
         localUrl = genResult.localUrl;
         entryPath = genResult.entryPath;

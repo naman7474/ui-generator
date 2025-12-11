@@ -70,7 +70,7 @@ export const detectShopifyStore = async (
     const page = await context.newPage();
 
     const apiCalls: ShopifyAPICall[] = [];
-    const timeout = options.timeout ?? 30000;
+    const timeout = options.timeout ?? 300000;
 
     // Intercept network requests
     page.on('request', (request: Request) => {

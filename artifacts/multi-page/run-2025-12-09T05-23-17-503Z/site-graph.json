@@ -1,0 +1,219 @@
+{
+  "entryUrl": "https://shop.kilrr.com",
+  "pages": [
+    [
+      "home",
+      {
+        "path": "home",
+        "url": "https://shop.kilrr.com",
+        "title": "KILRR | Get killer taste with zero fuss",
+        "links": [
+          {
+            "text": "",
+            "href": "https://shop.kilrr.com/",
+            "selector": "a[href=\"/\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 48,
+              "y": 59
+            },
+            "resolvedUrl": "https://shop.kilrr.com/"
+          },
+          {
+            "text": "Our Policies",
+            "href": "https://shop.kilrr.com/pages/our-policies",
+            "selector": "a[href=\"/pages/our-policies\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 1289,
+              "y": 6075
+            },
+            "resolvedUrl": "https://shop.kilrr.com/pages/our-policies"
+          },
+          {
+            "text": "Contact Us",
+            "href": "https://shop.kilrr.com/pages/contact-us",
+            "selector": "a[href=\"/pages/contact-us\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 1289,
+              "y": 6113
+            },
+            "resolvedUrl": "https://shop.kilrr.com/pages/contact-us"
+          },
+          {
+            "text": "Open cart0",
+            "href": "https://shop.kilrr.com/#",
+            "selector": "a[href=\"#\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 1360,
+              "y": 820
+            },
+            "resolvedUrl": "https://shop.kilrr.com/#"
+          }
+        ],
+        "sharedSections": [
+          "footer"
+        ]
+      }
+    ],
+    [
+      "pages-our-policies",
+      {
+        "path": "pages-our-policies",
+        "url": "https://shop.kilrr.com/pages/our-policies",
+        "title": "OUR POLICIES",
+        "links": [
+          {
+            "text": "",
+            "href": "https://shop.kilrr.com/",
+            "selector": "a[href=\"/\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 48,
+              "y": 59
+            },
+            "resolvedUrl": "https://shop.kilrr.com/"
+          },
+          {
+            "text": "Our Policies",
+            "href": "https://shop.kilrr.com/pages/our-policies",
+            "selector": "a[href=\"/pages/our-policies\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 1289,
+              "y": 3892
+            },
+            "resolvedUrl": "https://shop.kilrr.com/pages/our-policies"
+          },
+          {
+            "text": "Contact Us",
+            "href": "https://shop.kilrr.com/pages/contact-us",
+            "selector": "a[href=\"/pages/contact-us\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 1289,
+              "y": 3929
+            },
+            "resolvedUrl": "https://shop.kilrr.com/pages/contact-us"
+          },
+          {
+            "text": "Open cart0",
+            "href": "https://shop.kilrr.com/pages/our-policies#",
+            "selector": "a[href=\"#\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 1360,
+              "y": 820
+            },
+            "resolvedUrl": "https://shop.kilrr.com/pages/our-policies#"
+          }
+        ],
+        "sharedSections": [
+          "footer"
+        ]
+      }
+    ],
+    [
+      "pages-contact-us",
+      {
+        "path": "pages-contact-us",
+        "url": "https://shop.kilrr.com/pages/contact-us",
+        "title": "Contact Us",
+        "links": [
+          {
+            "text": "",
+            "href": "https://shop.kilrr.com/",
+            "selector": "a[href=\"/\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 48,
+              "y": 59
+            },
+            "resolvedUrl": "https://shop.kilrr.com/"
+          },
+          {
+            "text": "Our Policies",
+            "href": "https://shop.kilrr.com/pages/our-policies",
+            "selector": "a[href=\"/pages/our-policies\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 1289,
+              "y": 1029
+            },
+            "resolvedUrl": "https://shop.kilrr.com/pages/our-policies"
+          },
+          {
+            "text": "Contact Us",
+            "href": "https://shop.kilrr.com/pages/contact-us",
+            "selector": "a[href=\"/pages/contact-us\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 1289,
+              "y": 1067
+            },
+            "resolvedUrl": "https://shop.kilrr.com/pages/contact-us"
+          },
+          {
+            "text": "Open cart0",
+            "href": "https://shop.kilrr.com/pages/contact-us#",
+            "selector": "a[href=\"#\"]",
+            "isButton": false,
+            "parentSection": "",
+            "position": {
+              "x": 1360,
+              "y": 820
+            },
+            "resolvedUrl": "https://shop.kilrr.com/pages/contact-us#"
+          }
+        ],
+        "sharedSections": [
+          "footer"
+        ]
+      }
+    ]
+  ],
+  "routes": [
+    {
+      "path": "/",
+      "component": "HomePage",
+      "title": "KILRR | Get killer taste with zero fuss"
+    },
+    {
+      "path": "/pages-our-policies",
+      "component": "PagesOurPoliciesPage",
+      "title": "OUR POLICIES"
+    },
+    {
+      "path": "/pages-contact-us",
+      "component": "PagesContactUsPage",
+      "title": "Contact Us"
+    }
+  ],
+  "navigationMap": [
+    [
+      "https://shop.kilrr.com",
+      "home"
+    ],
+    [
+      "https://shop.kilrr.com/pages/our-policies",
+      "pages-our-policies"
+    ],
+    [
+      "https://shop.kilrr.com/pages/contact-us",
+      "pages-contact-us"
+    ]
+  ]
+}

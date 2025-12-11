@@ -1,0 +1,16 @@
+{
+  "iteration": 4,
+  "similarity": 0.5183457379751746,
+  "improvement": -0.005116914759503599,
+  "appliedCount": 8,
+  "changes": [
+    "color: rgb(26, 26, 26)",
+    "color: rgb(255, 255, 255)",
+    "background: rgba(0, 0, 0, 0) non",
+    "line-height: 20px",
+    "font-weight: 500",
+    "padding-right: 9px",
+    "padding-top: 8px",
+    "font-family: \"NVIDIA Sans\", sans-"
+  ]
+}

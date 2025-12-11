@@ -1,0 +1,16 @@
+{
+  "iteration": 2,
+  "similarity": 0.8882649739583334,
+  "improvement": 0,
+  "appliedCount": 8,
+  "changes": [
+    "color: rgb(45, 55, 72)",
+    "color: rgb(45, 55, 72)",
+    "font-weight: 500",
+    "font-family: \"DIN Neuzeit Grotesk",
+    "gap: 20px",
+    "margin-right: 0px",
+    "color: rgb(45, 55, 72)",
+    "background-color: rgb(28, 28, 28)"
+  ]
+}

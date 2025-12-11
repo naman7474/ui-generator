@@ -1,0 +1,16 @@
+{
+  "iteration": 2,
+  "similarity": 0.43316623263888887,
+  "improvement": 0.00002278645833331261,
+  "appliedCount": 8,
+  "changes": [
+    "border-color: rgba(29, 29, 29, 0.1",
+    "border-color: rgba(29, 29, 29, 0.1",
+    "border-color: rgba(29, 29, 29, 0.1",
+    "line-height: 22.4px",
+    "font-size: 14px",
+    "gap: 19px",
+    "border-radius: 3px",
+    "border-color: rgba(29, 29, 29, 0.1"
+  ]
+}

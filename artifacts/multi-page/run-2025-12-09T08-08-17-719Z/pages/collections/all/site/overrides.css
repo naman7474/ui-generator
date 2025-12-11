@@ -1,0 +1,65 @@
+/* CSS Overrides */
+
+/* Diff-based changes */
+[data-section="section-1"] a {
+  border-color: rgba(29, 29, 29, 0.12) !important;
+}
+[data-section="item-added-to-your-cart"] div:nth-of-type(1) > a {
+  color: rgb(29, 29, 29) !important;
+}
+[data-section="section-3"] {
+  color: rgb(29, 29, 29) !important;
+}
+[data-section="section-1"] {
+  font-family: Roboto, sans-serif !important;
+}
+[data-section="item-added-to-your-cart"] {
+  font-family: Roboto, sans-serif !important;
+}
+[data-section="item-added-to-your-cart"] div:nth-of-type(2) {
+  margin-left: 0px !important;
+}
+[data-section="item-added-to-your-cart"] div:nth-of-type(2) > div:nth-of-type(3) > div {
+  border-radius: 0px !important;
+}
+body > div > div {
+  color: rgb(29, 29, 29) !important;
+}
+/* Diff-based changes */
+[data-section="section-1"] {
+  border-color: rgba(29, 29, 29, 0.12) !important;
+}
+[data-section="item-added-to-your-cart"] div:nth-of-type(1) > a {
+  border-color: rgba(29, 29, 29, 0.12) !important;
+}
+[data-section="section-3"] {
+  border-color: rgba(29, 29, 29, 0.12) !important;
+}
+[data-section="section-1"] a {
+  line-height: 22.4px !important;
+}
+[data-section="item-added-to-your-cart"] {
+  font-size: 14px !important;
+}
+[data-section="item-added-to-your-cart"] div:nth-of-type(2) > div:nth-of-type(1) {
+  gap: 19px !important;
+}
+[data-section="item-added-to-your-cart"] div:nth-of-type(2) > div:nth-of-type(1) > input {
+  border-radius: 3px !important;
+}
+body > div > div {
+  border-color: rgba(29, 29, 29, 0.12) !important;
+}
+
+/* Iteration 3 - LLM Generated */
+```css
+body > div:nth-of-type(1) {
+  background-color: transparent !important;
+  color: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 0 !important;
+}
+
+header nav a {
+  font-size: 14px !

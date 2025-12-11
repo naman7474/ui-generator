@@ -77,12 +77,19 @@ const urlToPath = (url: string, baseOrigin: string): string => {
         const parsed = new URL(url);
         let pathPart = parsed.pathname;
 
-        // Clean up path
+        // Clean up path - remove leading/trailing slashes
         pathPart = pathPart.replace(/^\//, '').replace(/\/$/, '');
         if (!pathPart) pathPart = 'home';
 
-        // Replace special characters
-        pathPart = pathPart.replace(/[^a-z0-9-]/gi, '-');
+        // Remove file extensions
+        pathPart = pathPart.replace(/\.(html?|php|aspx?)$/i, '');
+
+        // Preserve slashes but sanitize each segment
+        // This ensures /pages/our-policies stays as pages/our-policies
+        pathPart = pathPart
+            .split('/')
+            .map(segment => segment.replace(/[^a-z0-9-]/gi, '-').toLowerCase())
+            .join('/');
 
         return pathPart;
     } catch {
@@ -171,7 +178,7 @@ export const discoverSitePages = async (
             try {
                 await page.goto(currentUrl, {
                     waitUntil: 'networkidle',
-                    timeout: 30000
+                    timeout: 300000
                 });
 
                 // Extract page info
@@ -275,8 +282,9 @@ export const discoverSitePages = async (
 };
 
 const pascalCase = (str: string): string => {
+    // Split on slashes, hyphens, and underscores to create valid JS identifiers
     return str
-        .split(/[-_]/)
+        .split(/[-_\/]/)
         .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
         .join('');
 };
@@ -377,19 +385,35 @@ export const generateMultiPageSite = async (
 // CODE GENERATORS
 // ============================================================================
 
-const generateRouterCode = (siteGraph: SiteGraph): string => {
-    const imports = siteGraph.routes.map(r =>
-        `import ${r.component} from './pages/${r.path === '/' ? 'home' : r.path.slice(1)}/App';`
-    ).join('\n');
+export const generateRouterCode = (siteGraph: SiteGraph): string => {
+    // Note: UMD globals (ReactRouterDOM) are used in the generated code, not imported here
 
     const routes = siteGraph.routes.map(r =>
         `        <Route path="${r.path}" element={<${r.component} />} />`
     ).join('\n');
 
-    return `// Generated Router
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Layout from './Layout';
-${imports}
+    // Reference page components that will be attached to window by inline scripts
+    const componentRefs = siteGraph.routes.map(r => {
+        const pagePath = r.path === '/' ? 'home' : r.path.slice(1).replace(/\//g, '_');
+        return `const ${r.component} = window.__PAGE_COMPONENTS__?.['${pagePath}'] || (() => <div>Loading ${r.component}...</div>);`;
+    }).join('\n');
+
+    return `// Generated Router - Uses UMD globals
+const { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } = ReactRouterDOM;
+
+// Layout component
+const Layout = ({ children }) => {
+    return (
+        <div className="min-h-screen">
+            <main>
+                {children}
+            </main>
+        </div>
+    );
+};
+
+// Page component references (loaded from inline scripts)
+${componentRefs}
 
 const App = () => {
     return (
@@ -397,35 +421,44 @@ const App = () => {
             <Layout>
                 <Routes>
 ${routes}
+                    <Route path="*" element={<div className="p-8 text-center"><h1 className="text-2xl">Page Not Found</h1></div>} />
                 </Routes>
             </Layout>
         </BrowserRouter>
     );
 };
 
-export default App;
+// Attach to window for the render script
+window.App = App;
 `;
 };
 
-const generateLayoutCode = (siteGraph: SiteGraph): string => {
-    return `// Generated Layout
+export const generateLayoutCode = (siteGraph: SiteGraph): string => {
+    // Layout is now included inline in App.jsx for UMD compatibility
+    return `// Layout is embedded in App.jsx for UMD compatibility
+// This file is kept for potential future use with bundled builds
 const Layout = ({ children }) => {
     return (
         <div className="min-h-screen">
-            {/* Shared Header/Nav would go here */}
             <main>
                 {children}
             </main>
-            {/* Shared Footer would go here */}
         </div>
     );
 };
 
-export default Layout;
+window.Layout = Layout;
 `;
 };
 
-const generateIndexHtml = (siteGraph: SiteGraph): string => {
+export const generateIndexHtml = (siteGraph: SiteGraph): string => {
+    // Generate inline script tags for each page component
+    const pageScripts = siteGraph.routes.map(r => {
+        const pagePath = r.path === '/' ? 'home' : r.path.slice(1);
+        // Each page's App.jsx will be loaded inline and attach its component to window
+        return `    <script type="text/babel" src="pages/${pagePath}/App.jsx" data-page="${pagePath}"></script>`;
+    }).join('\n');
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -437,12 +470,31 @@ const generateIndexHtml = (siteGraph: SiteGraph): string => {
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/react-router-dom@6/dist/umd/react-router-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.min.js"></script>
+    <script>
+        // Initialize page component registry
+        window.__PAGE_COMPONENTS__ = window.__PAGE_COMPONENTS__ || {};
+    </script>
 </head>
 <body>
     <div id="root"></div>
+    
+    <!-- Page Components (loaded first so they're available to router) -->
+${pageScripts}
+    
+    <!-- Main App with Router -->
     <script type="text/babel" src="App.jsx"></script>
+    
+    <!-- Render the app after all components are loaded -->
     <script type="text/babel">
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        // Wait a tick to ensure all Babel-transpiled scripts have executed
+        setTimeout(() => {
+            if (window.App) {
+                ReactDOM.createRoot(document.getElementById('root')).render(<window.App />);
+            } else {
+                console.error('App component not found on window');
+            }
+        }, 100);
     </script>
 </body>
 </html>`;

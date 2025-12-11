@@ -1,0 +1,16 @@
+{
+  "iteration": 5,
+  "similarity": 0.6277324265888978,
+  "improvement": -0.02491766391794048,
+  "appliedCount": 8,
+  "changes": [
+    "color: rgb(255, 107, 53)",
+    "color: rgb(45, 55, 72)",
+    "border-color: rgb(229, 231, 235)",
+    "text-align: start",
+    "letter-spacing: 1.6px",
+    "padding-left: 0px",
+    "padding-bottom: 20px",
+    "border-radius: 0px"
+  ]
+}

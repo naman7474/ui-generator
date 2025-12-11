@@ -81,7 +81,7 @@ export const extractAssetsWithPositions = async (
     const downloadedUrls = new Set<string>();
 
     try {
-        await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+        await page.goto(url, { waitUntil: 'networkidle', timeout: 300000 });
 
         // Scroll through page to trigger lazy loading
         await page.evaluate(async () => {
@@ -328,12 +328,12 @@ export const identifySections = async (url: string): Promise<Section[]> => {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 
     try {
-        await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+        await page.goto(url, { waitUntil: 'networkidle', timeout: 300000 });
         await page.waitForTimeout(2000);
 
         const sections = await page.evaluate(() => {
             const results: any[] = [];
-            const MIN_SECTION_HEIGHT = 80;
+            const MIN_SECTION_HEIGHT = 40;  // Reduced from 80 to catch slim headers
             const viewportWidth = window.innerWidth;
 
             // Selectors to find sections
@@ -347,7 +347,11 @@ export const identifySections = async (url: string): Promise<Section[]> => {
                 '#app > header', '#app > section', '#app > footer',
                 '#__next > header', '#__next > section', '#__next > footer',
                 '#__next > main > section', '#__next > div > section',
-                '[data-section]'
+                '[data-section]',
+                // Additional header patterns
+                '[class*="header"]', '[class*="navbar"]', '[class*="nav-bar"]',
+                '[class*="top-bar"]', '[class*="announcement"]',
+                '[id*="header"]', '[id*="navbar"]'
             ];
 
             const foundElements = new Set<Element>();
@@ -362,6 +366,34 @@ export const identifySections = async (url: string): Promise<Section[]> => {
                     });
                 } catch (e) { }
             }
+
+            // CRITICAL: Always try to find header at top of page
+            // Check for fixed/sticky elements at top
+            const allElements = document.querySelectorAll('header, nav, div, section');
+            Array.from(allElements).forEach(el => {
+                const rect = el.getBoundingClientRect();
+                const style = window.getComputedStyle(el);
+
+                // Skip elements that are too tall (page wrappers, not headers)
+                const MAX_HEADER_HEIGHT = 200;
+
+                // Fixed or sticky elements at top are likely headers
+                if ((style.position === 'fixed' || style.position === 'sticky') && rect.top <= 10) {
+                    if (rect.height >= 30 && rect.height <= MAX_HEADER_HEIGHT && rect.width > viewportWidth * 0.8) {
+                        foundElements.add(el);
+                    }
+                }
+
+                // First element near top of page that looks like a header
+                if (rect.top + window.scrollY < 150 && rect.height >= 30 && rect.height <= MAX_HEADER_HEIGHT && rect.width > viewportWidth * 0.8) {
+                    // Check if it looks like a header (has logo, nav links, etc.)
+                    const hasLogo = el.querySelector('img, svg, [class*="logo"]');
+                    const hasNav = el.querySelector('nav, a, button');
+                    if (hasLogo || hasNav) {
+                        foundElements.add(el);
+                    }
+                }
+            });
 
             // Fallback: direct children of containers
             if (foundElements.size < 3) {
@@ -464,7 +496,7 @@ export const captureSectionScreenshots = async (
     const screenshotPaths = new Map<string, string>();
 
     try {
-        await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+        await page.goto(url, { waitUntil: 'networkidle', timeout: 300000 });
         await page.waitForTimeout(2000);
 
         const fullPath = path.join(outputDir, 'full-page.png');
@@ -511,7 +543,8 @@ const generateSection = async (
     screenshotPath: string,
     totalSections: number,
     sectionAssets: ExtractedAsset[],
-    retryCount: number = 0
+    retryCount: number = 0,
+    routeMap?: Record<string, string>  // Original path → generated route
 ): Promise<string> => {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY required');
 
@@ -585,6 +618,14 @@ ${sectionAssets.length > 0 ?
 - Add descriptive alt text
 - Use correct sizing (object-cover, object-contain as appropriate)
 
+### Links
+${routeMap && Object.keys(routeMap).length > 0 ? `
+- For internal navigation, use these EXACT routes (these are the pages in this site):
+${Object.entries(routeMap).map(([origPath, route]) => `  "${origPath}" → href="${route}"`).join('\n')}
+- For navigation items that match the paths above, use the corresponding route
+- For links to pages NOT in this list, use href="#" with a data-external attribute
+` : '- Use href="#" for navigation links (they will be updated later)'}
+
 ### Text
 - Copy ALL visible text EXACTLY as shown
 - Don't abbreviate or summarize
@@ -634,7 +675,7 @@ Generate the complete component now:`;
             if (response.status >= 500 && retryCount < 2) {
                 console.log(`[MultiStep] Retrying after ${(retryCount + 1) * 2}s...`);
                 await new Promise(r => setTimeout(r, (retryCount + 1) * 2000));
-                return generateSection(section, screenshotPath, totalSections, sectionAssets, retryCount + 1);
+                return generateSection(section, screenshotPath, totalSections, sectionAssets, retryCount + 1, routeMap);
             }
 
             return generatePlaceholder(section, componentName, sectionId);
@@ -667,7 +708,7 @@ Generate the complete component now:`;
             console.warn(`[MultiStep] Invalid code structure, retrying...`);
             if (retryCount < 1) {
                 await new Promise(r => setTimeout(r, 1000));
-                return generateSection(section, screenshotPath, totalSections, sectionAssets, retryCount + 1);
+                return generateSection(section, screenshotPath, totalSections, sectionAssets, retryCount + 1, routeMap);
             }
             return generatePlaceholder(section, componentName, sectionId);
         }
@@ -679,7 +720,7 @@ Generate the complete component now:`;
         console.error(`[MultiStep] Error: ${e.message}`);
         if (retryCount < 2) {
             await new Promise(r => setTimeout(r, 2000));
-            return generateSection(section, screenshotPath, totalSections, sectionAssets, retryCount + 1);
+            return generateSection(section, screenshotPath, totalSections, sectionAssets, retryCount + 1, routeMap);
         }
         return generatePlaceholder(section, componentName, sectionId);
     }
@@ -801,6 +842,7 @@ export interface MultiStepGenerationOptions {
     maxSections?: number;
     delayBetweenSections?: number;
     extractAssets?: boolean;
+    routeMap?: Record<string, string>;  // Original path → route for link generation
 }
 
 export interface MultiStepGenerationResult {
@@ -820,7 +862,8 @@ export const generateWithMultiStep = async (
         baseUrl,
         maxSections = 15,
         delayBetweenSections = 1500,
-        extractAssets: shouldExtractAssets = true
+        extractAssets: shouldExtractAssets = true,
+        routeMap
     } = options;
 
     if (!GEMINI_API_KEY) {
@@ -888,7 +931,7 @@ export const generateWithMultiStep = async (
         const name = section.headingText || `Section ${i + 1}`;
         console.log(`\n[MultiStep] ─── ${i + 1}/${sectionsToGenerate.length}: ${name} ───`);
 
-        const code = await generateSection(section, screenshotPath, sectionsToGenerate.length, sectionAssets);
+        const code = await generateSection(section, screenshotPath, sectionsToGenerate.length, sectionAssets, 0, routeMap);
 
         generatedSections.push({
             id: section.id,

@@ -1,0 +1,524 @@
+[
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/themes/nvidia/dist/images/nvidia-logo_28b633c7.svg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-0.svg",
+    "relativePath": "./assets/img-0.svg",
+    "type": "image",
+    "rect": {
+      "x": 87,
+      "y": 18,
+      "width": 141,
+      "height": 26
+    },
+    "alt": "Home",
+    "isBackground": false,
+    "role": "logo"
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/CUDA-13.1-645x363-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-1.webp",
+    "relativePath": "./assets/img-1.webp",
+    "type": "image",
+    "rect": {
+      "x": 736,
+      "y": 161,
+      "width": 617,
+      "height": 347
+    },
+    "alt": "NVIDIA CUDA 13.1 Powers Next-Gen GPU Programming with NVIDIA CUDA Tile and Performance Gains",
+    "isBackground": false,
+    "role": "hero"
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/10/floating-cubes-645x362-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-2.webp",
+    "relativePath": "./assets/img-2.webp",
+    "type": "image",
+    "rect": {
+      "x": 2002,
+      "y": 161,
+      "width": 617,
+      "height": 346
+    },
+    "alt": "Simplify GPU Programming with NVIDIA CUDA Tile in Python",
+    "isBackground": false,
+    "role": "hero"
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/plugins/nv-recommender/js/dist/common-cog.d8969763.svg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-3.svg",
+    "relativePath": "./assets/img-3.svg",
+    "type": "image",
+    "rect": {
+      "x": 401,
+      "y": 731,
+      "width": 24,
+      "height": 24
+    },
+    "alt": "Select Your Interests",
+    "isBackground": false,
+    "role": "icon"
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/12/Untitled-660x370.png",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-4.png",
+    "relativePath": "./assets/img-4.png",
+    "type": "image",
+    "rect": {
+      "x": 87,
+      "y": 794,
+      "width": 294,
+      "height": 165
+    },
+    "alt": "NVIDIA Kaggle Grandmasters Win Artificial General Intelligence Competition",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/12/grace-corp-blog-gb300-nvl72-1280x680-r1-2-660x370.png",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-5.png",
+    "relativePath": "./assets/img-5.png",
+    "type": "image",
+    "rect": {
+      "x": 411,
+      "y": 794,
+      "width": 294,
+      "height": 165
+    },
+    "alt": "AWS Integrates AI Infrastructure with NVIDIA NVLink Fusion for Trainium4 Deployment",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2017/01/CUDA-Blog-Image-1000x600-1.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-6.jpg",
+    "relativePath": "./assets/img-6.jpg",
+    "type": "image",
+    "rect": {
+      "x": 735,
+      "y": 794,
+      "width": 294,
+      "height": 165
+    },
+    "alt": "An Even Easier Introduction to CUDA (Updated)",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/10/image4-2-660x370.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-7.jpg",
+    "relativePath": "./assets/img-7.jpg",
+    "type": "image",
+    "rect": {
+      "x": 1059,
+      "y": 794,
+      "width": 294,
+      "height": 165
+    },
+    "alt": "Scaling Large MoE Models with Wide Expert Parallelism on NVL72 Rack Scale Systems",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/10/floating-cubes-660x370.png",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-8.png",
+    "relativePath": "./assets/img-8.png",
+    "type": "image",
+    "rect": {
+      "x": 1383,
+      "y": 794,
+      "width": 294,
+      "height": 165
+    },
+    "alt": "Simplify GPU Programming with NVIDIA CUDA Tile in Python",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/CUDA-Tile-660x370.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-9.jpg",
+    "relativePath": "./assets/img-9.jpg",
+    "type": "image",
+    "rect": {
+      "x": 1707,
+      "y": 794,
+      "width": 294,
+      "height": 165
+    },
+    "alt": "Focus on Your Algorithm—NVIDIA CUDA Tile Handles the Hardware",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/CUDA-13.1-660x370.png",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-10.png",
+    "relativePath": "./assets/img-10.png",
+    "type": "image",
+    "rect": {
+      "x": 2031,
+      "y": 794,
+      "width": 294,
+      "height": 165
+    },
+    "alt": "NVIDIA CUDA 13.1 Powers Next-Gen GPU Programming with NVIDIA CUDA Tile and Performance Gains",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/12/cybersecurity-jpg.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-11.webp",
+    "relativePath": "./assets/img-11.webp",
+    "type": "image",
+    "rect": {
+      "x": 83,
+      "y": 1336,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/12/image1-2-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-12.webp",
+    "relativePath": "./assets/img-12.webp",
+    "type": "image",
+    "rect": {
+      "x": 407,
+      "y": 1336,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/12/Untitled-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-13.webp",
+    "relativePath": "./assets/img-13.webp",
+    "type": "image",
+    "rect": {
+      "x": 731,
+      "y": 1336,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/12/NVIDIA-Grace-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-14.webp",
+    "relativePath": "./assets/img-14.webp",
+    "type": "image",
+    "rect": {
+      "x": 1055,
+      "y": 1336,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "NVIDIA Grace CPU",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/CUDA-13.1-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-15.webp",
+    "relativePath": "./assets/img-15.webp",
+    "type": "image",
+    "rect": {
+      "x": 1379,
+      "y": 1336,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "Decorative image.",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/10/floating-cubes-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-16.webp",
+    "relativePath": "./assets/img-16.webp",
+    "type": "image",
+    "rect": {
+      "x": 1703,
+      "y": 1336,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "Decorative image.",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/CUDA-Tile-660x370-jpg.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-17.webp",
+    "relativePath": "./assets/img-17.webp",
+    "type": "image",
+    "rect": {
+      "x": 2027,
+      "y": 1336,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "CUDA Tile example.",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/10/data-center-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-18.webp",
+    "relativePath": "./assets/img-18.webp",
+    "type": "image",
+    "rect": {
+      "x": 83,
+      "y": 1884,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/10/image4-2-660x370-jpg.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-19.webp",
+    "relativePath": "./assets/img-19.webp",
+    "type": "image",
+    "rect": {
+      "x": 407,
+      "y": 1884,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/10/inference-data-center-think-smart-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-20.webp",
+    "relativePath": "./assets/img-20.webp",
+    "type": "image",
+    "rect": {
+      "x": 731,
+      "y": 1884,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/09/inference-nvidia-dynamo-blog-1280x680-1-e1758728822171-657x370.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-21.webp",
+    "relativePath": "./assets/img-21.webp",
+    "type": "image",
+    "rect": {
+      "x": 1055,
+      "y": 1884,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/09/nvidia-ai-data-platform-1-660x370-jpg.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-22.webp",
+    "relativePath": "./assets/img-22.webp",
+    "type": "image",
+    "rect": {
+      "x": 1379,
+      "y": 1884,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/09/inference-speculative-decoding-llama-eagle-660x370-jpg.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-23.webp",
+    "relativePath": "./assets/img-23.webp",
+    "type": "image",
+    "rect": {
+      "x": 1703,
+      "y": 1884,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/ML-Agent-e1762537462429-657x370.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-24.webp",
+    "relativePath": "./assets/img-24.webp",
+    "type": "image",
+    "rect": {
+      "x": 83,
+      "y": 2451,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "An illustration of an AI agent.",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/10/Copy-of-genai-tech-blog-nemotron-1920x1080-1-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-25.webp",
+    "relativePath": "./assets/img-25.webp",
+    "type": "image",
+    "rect": {
+      "x": 407,
+      "y": 2451,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/10/Itelligence-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-26.webp",
+    "relativePath": "./assets/img-26.webp",
+    "type": "image",
+    "rect": {
+      "x": 731,
+      "y": 2451,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/10/genai-press-rag-visual-1920x1080-1-660x370-jpg.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-27.webp",
+    "relativePath": "./assets/img-27.webp",
+    "type": "image",
+    "rect": {
+      "x": 1055,
+      "y": 2451,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/09/blog-rag-agent-workshop-tech-blog-1920x1080-1-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-28.webp",
+    "relativePath": "./assets/img-28.webp",
+    "type": "image",
+    "rect": {
+      "x": 1379,
+      "y": 2451,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/09/llm-promo-chat-labs-blog2-blog-3419377-1920x1080-1-660x370-jpg.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-29.webp",
+    "relativePath": "./assets/img-29.webp",
+    "type": "image",
+    "rect": {
+      "x": 1703,
+      "y": 2451,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/hero-fixer.gif",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-30.gif",
+    "relativePath": "./assets/img-30.gif",
+    "type": "image",
+    "rect": {
+      "x": 83,
+      "y": 3000,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/12/mistral-ai-nvidia-logos-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-31.webp",
+    "relativePath": "./assets/img-31.webp",
+    "type": "image",
+    "rect": {
+      "x": 407,
+      "y": 3000,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/Orchestration-Agent-660x370-png.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-32.webp",
+    "relativePath": "./assets/img-32.webp",
+    "type": "image",
+    "rect": {
+      "x": 731,
+      "y": 3000,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "Decorative image.",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/Finance-e1764013086709-658x370.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-33.webp",
+    "relativePath": "./assets/img-33.webp",
+    "type": "image",
+    "rect": {
+      "x": 1055,
+      "y": 3000,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "Decorative image.",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/Deep-Research-Agent-660x370-jpg.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-34.webp",
+    "relativePath": "./assets/img-34.webp",
+    "type": "image",
+    "rect": {
+      "x": 1379,
+      "y": 3000,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "Decorative image.",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/llm-training-660x370-jpg.webp",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-35.webp",
+    "relativePath": "./assets/img-35.webp",
+    "type": "image",
+    "rect": {
+      "x": 1703,
+      "y": 3000,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/gtc25-dc-web-drmk-tech-blog-date-1360x180-1.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T16-12-45-916Z/assets/img-36.jpg",
+    "relativePath": "./assets/img-36.jpg",
+    "type": "image",
+    "rect": {
+      "x": 40,
+      "y": 7858,
+      "width": 1360,
+      "height": 180
+    },
+    "alt": "",
+    "isBackground": false
+  }
+]

@@ -1,0 +1,512 @@
+[
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/10/floating-cubes-660x370.png",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-0.png",
+    "relativePath": "./assets/img-0.png",
+    "type": "image",
+    "rect": {
+      "x": 72,
+      "y": 744,
+      "width": 302,
+      "height": 169
+    },
+    "alt": "",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/hero-fixer.gif",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-1.gif",
+    "relativePath": "./assets/img-1.gif",
+    "type": "image",
+    "rect": {
+      "x": 404,
+      "y": 744,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/Orchestration-Agent-660x370.png",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-2.png",
+    "relativePath": "./assets/img-2.png",
+    "type": "image",
+    "rect": {
+      "x": 735,
+      "y": 744,
+      "width": 302,
+      "height": 169
+    },
+    "alt": "",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/12/Untitled-660x370.png",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-3.png",
+    "relativePath": "./assets/img-3.png",
+    "type": "image",
+    "rect": {
+      "x": 72,
+      "y": 1236,
+      "width": 302,
+      "height": 169
+    },
+    "alt": "",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/CUDA-Tile-660x370.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-4.jpg",
+    "relativePath": "./assets/img-4.jpg",
+    "type": "image",
+    "rect": {
+      "x": 404,
+      "y": 1236,
+      "width": 302,
+      "height": 169
+    },
+    "alt": "",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/12/mistral-ai-nvidia-logos-660x370.png",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-5.png",
+    "relativePath": "./assets/img-5.png",
+    "type": "image",
+    "rect": {
+      "x": 735,
+      "y": 1236,
+      "width": 302,
+      "height": 169
+    },
+    "alt": "",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://developer-blogs.nvidia.com/wp-content/uploads/2025/11/image8-660x370.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-6.jpg",
+    "relativePath": "./assets/img-6.jpg",
+    "type": "image",
+    "rect": {
+      "x": 1067,
+      "y": 1236,
+      "width": 302,
+      "height": 169
+    },
+    "alt": "",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://developer.download.nvidia.com/images/homepage/nv-certified-badge.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-7.jpg",
+    "relativePath": "./assets/img-7.jpg",
+    "type": "image",
+    "rect": {
+      "x": 72,
+      "y": 1795,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://developer.download.nvidia.com/images/homepage/usd-warehouse.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-8.jpg",
+    "relativePath": "./assets/img-8.jpg",
+    "type": "image",
+    "rect": {
+      "x": 404,
+      "y": 1795,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://developer.download.nvidia.com/images/homepage/ov-dli-learn-usd.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-9.jpg",
+    "relativePath": "./assets/img-9.jpg",
+    "type": "image",
+    "rect": {
+      "x": 735,
+      "y": 1795,
+      "width": 302,
+      "height": 170
+    },
+    "alt": "",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_w85anady/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-10.png",
+    "relativePath": "./assets/img-10.png",
+    "type": "image",
+    "rect": {
+      "x": 87,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "Quantum Computing: Where We Are and Where We’re Headed",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_3hdv62ip/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-11.png",
+    "relativePath": "./assets/img-11.png",
+    "type": "image",
+    "rect": {
+      "x": 519,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "Frontiers of AI and Computing: A Conversation With Yann LeCun and Bill Dally",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_rdxuxt1v/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-12.png",
+    "relativePath": "./assets/img-12.png",
+    "type": "image",
+    "rect": {
+      "x": 951,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "AI for Humanoid Robots ",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_3ipl7kx8/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-13.png",
+    "relativePath": "./assets/img-13.png",
+    "type": "image",
+    "rect": {
+      "x": 1383,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "From Rendering to Reality: Using Visualization Tools and GenAI to Improve Customer Decision Making Online",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_uvikwm0y/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-14.png",
+    "relativePath": "./assets/img-14.png",
+    "type": "image",
+    "rect": {
+      "x": 1815,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "A New Era of Generalist Robotics: The Rise of Humanoids",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_7qb5abp3/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-15.png",
+    "relativePath": "./assets/img-15.png",
+    "type": "image",
+    "rect": {
+      "x": 2247,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "Insights From NVIDIA Research",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_oa97frml/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-16.png",
+    "relativePath": "./assets/img-16.png",
+    "type": "image",
+    "rect": {
+      "x": 2679,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "Scaling Open Source AI: From Foundation Models to Ecosystem Success",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_efbo8hxm/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-17.png",
+    "relativePath": "./assets/img-17.png",
+    "type": "image",
+    "rect": {
+      "x": 3111,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "An Introduction to NVIDIA Cosmos World Foundation Models",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_tzd2xwmv/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-18.png",
+    "relativePath": "./assets/img-18.png",
+    "type": "image",
+    "rect": {
+      "x": 3543,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "Agentic AI at the Edge: Real-Time Sentiment Analysis for Engaging Customer Interaction",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_v8vsbvmz/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-19.png",
+    "relativePath": "./assets/img-19.png",
+    "type": "image",
+    "rect": {
+      "x": 3975,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "An Introduction to Building Humanoid Robots",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_bdbgc5yu/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-20.png",
+    "relativePath": "./assets/img-20.png",
+    "type": "image",
+    "rect": {
+      "x": 4407,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "CUDA: New Features and Beyond",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://cdnsecakmi.kaltura.com/p/2935771/thumbnail/entry_id/1_vtfx7um7/width/400",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-21.png",
+    "relativePath": "./assets/img-21.png",
+    "type": "image",
+    "rect": {
+      "x": 4839,
+      "y": 2313,
+      "width": 402,
+      "height": 226
+    },
+    "alt": "1,001 Ways to Write CUDA Kernels in Python",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://dirms4qsy6412.cloudfront.net/assets/home/nv-devzone-solutions-icon-ai-deep-learning-3c2f7021adc7a22e8bfe9b5323c88d28d3f3e8732b13fa3b5e9a36781b8e5d2e.svg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-22.svg",
+    "relativePath": "./assets/img-22.svg",
+    "type": "image",
+    "rect": {
+      "x": 128,
+      "y": 3479,
+      "width": 80,
+      "height": 80
+    },
+    "alt": "Artificial Intelligence",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://dirms4qsy6412.cloudfront.net/assets/home/m48-render-256px-blk-5956f0400ed7bc00fb17ba1df3601d1b2ba06b1268523e6864fd23fac6304e81.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-23.jpg",
+    "relativePath": "./assets/img-23.jpg",
+    "type": "image",
+    "rect": {
+      "x": 349,
+      "y": 3479,
+      "width": 80,
+      "height": 80
+    },
+    "alt": "Graphics and Rendering",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://dirms4qsy6412.cloudfront.net/assets/home/m48-monitor-visualization-3713c607186abdba178db5ff8ddd2a4a647e332826d049cc9a05eb03ea1c3391.svg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-24.svg",
+    "relativePath": "./assets/img-24.svg",
+    "type": "image",
+    "rect": {
+      "x": 570,
+      "y": 3479,
+      "width": 80,
+      "height": 80
+    },
+    "alt": "Design and Simulation",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://dirms4qsy6412.cloudfront.net/assets/home/m48-hpc-supercomputing-256x-blk-b3d5a70a729d40d08be6bcdf308cf6cd719e179370517dd1eadf8ac260b78ad8.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-25.jpg",
+    "relativePath": "./assets/img-25.jpg",
+    "type": "image",
+    "rect": {
+      "x": 791,
+      "y": 3479,
+      "width": 80,
+      "height": 80
+    },
+    "alt": "High-Performance Computing",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://dirms4qsy6412.cloudfront.net/assets/home/nv-devzone-industry-icon-autonomous-vehicles-cc08b4a33659d8d1f6aa36d0fcb757708d541f7360e301f8bb4a8ec2b76af474.svg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-26.svg",
+    "relativePath": "./assets/img-26.svg",
+    "type": "image",
+    "rect": {
+      "x": 1012,
+      "y": 3479,
+      "width": 80,
+      "height": 80
+    },
+    "alt": "Autonomous Vehicles",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://dirms4qsy6412.cloudfront.net/assets/home/nv-devzone-industry-icon-healthcare-67c0602559dcd850fbc953087decde941ee39ebf22f736004eb9fd8750f3cfeb.svg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-27.svg",
+    "relativePath": "./assets/img-27.svg",
+    "type": "image",
+    "rect": {
+      "x": 128,
+      "y": 3826,
+      "width": 80,
+      "height": 80
+    },
+    "alt": "Healthcare",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://dirms4qsy6412.cloudfront.net/assets/home/nv-devzone-solutions-icon-autonomous-machines-0439abdaae9c7dd1ca2ed915d4324e904f317bb2ea8a3ff8960ddc05fc54bbce.svg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-28.svg",
+    "relativePath": "./assets/img-28.svg",
+    "type": "image",
+    "rect": {
+      "x": 349,
+      "y": 3826,
+      "width": 80,
+      "height": 80
+    },
+    "alt": "Robotics",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://dirms4qsy6412.cloudfront.net/assets/home/m48-controller-256px-blk-457500c558a41797dc8e299faa0306e9c65ae7408fb73af6c74fa5966cfa3509.png",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-29.png",
+    "relativePath": "./assets/img-29.png",
+    "type": "image",
+    "rect": {
+      "x": 570,
+      "y": 3826,
+      "width": 80,
+      "height": 80
+    },
+    "alt": "Game Development",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://dirms4qsy6412.cloudfront.net/assets/home/nv-devzone-industry-icon-financial-services-ff35543c59bc26e78ba488f5a4c0301079e350fae0596ffd7a3d364db73dc17e.svg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-30.svg",
+    "relativePath": "./assets/img-30.svg",
+    "type": "image",
+    "rect": {
+      "x": 791,
+      "y": 3826,
+      "width": 80,
+      "height": 80
+    },
+    "alt": "Financial Services",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://dirms4qsy6412.cloudfront.net/assets/home/nv-devzone-industry-icon-telco-4ca4ede35383adc6087a08ffa3a258929da44e58d1f29a8a8682bc9c9f7b47ed.svg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-31.svg",
+    "relativePath": "./assets/img-31.svg",
+    "type": "image",
+    "rect": {
+      "x": 1012,
+      "y": 3826,
+      "width": 80,
+      "height": 80
+    },
+    "alt": "Telecommunication",
+    "isBackground": false,
+    "role": "product"
+  },
+  {
+    "originalUrl": "https://developer.download.nvidia.com/images/homepage/nvidia-mistral-bm-lg580-partner-d@2x.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-32.jpg",
+    "relativePath": "./assets/img-32.jpg",
+    "type": "image",
+    "rect": {
+      "x": 0,
+      "y": 163,
+      "width": 1440,
+      "height": 460
+    },
+    "alt": "background",
+    "isBackground": true,
+    "role": "hero"
+  },
+  {
+    "originalUrl": "https://dirms4qsy6412.cloudfront.net/assets/home/hero/ai-inference-hero-2560x300@2x-736e9b0d2d9b52ded1dc31f75c7905f4141115b9a02322efd3b5304a7b860c2b.jpg",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-09T15-46-05-588Z/assets/img-33.jpg",
+    "relativePath": "./assets/img-33.jpg",
+    "type": "image",
+    "rect": {
+      "x": 0,
+      "y": 2804,
+      "width": 1440,
+      "height": 300
+    },
+    "alt": "background",
+    "isBackground": true,
+    "role": "background"
+  }
+]

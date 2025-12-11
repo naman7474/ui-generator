@@ -1,0 +1,186 @@
+[
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FKILRR_logo_final.avif&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-0.png",
+    "relativePath": "./assets/img-0.png",
+    "type": "image",
+    "rect": {
+      "x": 48,
+      "y": 59,
+      "width": 135,
+      "height": 49
+    },
+    "alt": "KILRR Logo",
+    "isBackground": false,
+    "role": "logo"
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=%2Fkilrr%2Fimages%2FKILRR_logo_final.avif&w=384&q=90",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-1.png",
+    "relativePath": "./assets/img-1.png",
+    "type": "image",
+    "rect": {
+      "x": 40,
+      "y": 3861,
+      "width": 140,
+      "height": 50
+    },
+    "alt": "Kilrr Logo",
+    "isBackground": false,
+    "role": "logo"
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Tandoori_-_Web_Product_Carousel.webp%3Fv%3D1729920083&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-2.png",
+    "relativePath": "./assets/img-2.png",
+    "type": "image",
+    "rect": {
+      "x": 1457,
+      "y": 308,
+      "width": 185,
+      "height": 131
+    },
+    "alt": "Tandoori Blast",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Kali_Mirch_-_Web_Product_Carousel.webp%3Fv%3D1729920125&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-3.png",
+    "relativePath": "./assets/img-3.png",
+    "type": "image",
+    "rect": {
+      "x": 1655,
+      "y": 308,
+      "width": 185,
+      "height": 131
+    },
+    "alt": "Saza-E-KaaliMirch",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Afghani_-_Web_Product_Carousel.webp%3Fv%3D1729920235&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-4.png",
+    "relativePath": "./assets/img-4.png",
+    "type": "image",
+    "rect": {
+      "x": 1853,
+      "y": 308,
+      "width": 185,
+      "height": 131
+    },
+    "alt": "Afghan-Ka-Shaitaan",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Dhaniya_-_Web_Product_Carousel.webp%3Fv%3D1729920204&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-5.png",
+    "relativePath": "./assets/img-5.png",
+    "type": "image",
+    "rect": {
+      "x": 2051,
+      "y": 308,
+      "width": 185,
+      "height": 131
+    },
+    "alt": "Dhaniya Mirchi Aur Woh",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Awadhi_-_Web_Product_Carousel.webp%3Fv%3D1729919958&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-6.png",
+    "relativePath": "./assets/img-6.png",
+    "type": "image",
+    "rect": {
+      "x": 2249,
+      "y": 308,
+      "width": 185,
+      "height": 131
+    },
+    "alt": "Gangs of Awadh",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Lucknowi_-_Web_Product_Carousel.webp%3Fv%3D1729920269&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-7.png",
+    "relativePath": "./assets/img-7.png",
+    "type": "image",
+    "rect": {
+      "x": 2447,
+      "y": 308,
+      "width": 185,
+      "height": 131
+    },
+    "alt": "Lucknowi Tamancha",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Pesto_-_Web_Product_Carousel.webp%3Fv%3D1729920300&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-8.png",
+    "relativePath": "./assets/img-8.png",
+    "type": "image",
+    "rect": {
+      "x": 2645,
+      "y": 308,
+      "width": 185,
+      "height": 131
+    },
+    "alt": "Pistol Pesto",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01_Peri_Peri_-_Web_Product_Carousel.webp%3Fv%3D1741681007&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-9.png",
+    "relativePath": "./assets/img-9.png",
+    "type": "image",
+    "rect": {
+      "x": 2843,
+      "y": 308,
+      "width": 185,
+      "height": 131
+    },
+    "alt": "Bloody Peri",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FAchaari_Atyachaari_-_Mood_shot_2.webp%3Fv%3D1741681007&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-10.png",
+    "relativePath": "./assets/img-10.png",
+    "type": "image",
+    "rect": {
+      "x": 3041,
+      "y": 308,
+      "width": 185,
+      "height": 131
+    },
+    "alt": "Achaari Atyachaari",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2F01-PaapiPudina-Moodshot_web.webp%3Fv%3D1744792100&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-11.png",
+    "relativePath": "./assets/img-11.png",
+    "type": "image",
+    "rect": {
+      "x": 3239,
+      "y": 308,
+      "width": 185,
+      "height": 131
+    },
+    "alt": "Paapi Pudina",
+    "isBackground": false
+  },
+  {
+    "originalUrl": "https://shop.kilrr.com/_next/image?url=https%3A%2F%2Fcdn.shopify.com%2Fs%2Ffiles%2F1%2F0833%2F6929%2F6158%2Ffiles%2FShawarma-WebProductCarousel01.webp%3Fv%3D1757583202&w=384&q=75",
+    "localPath": "artifacts/pixelgen-v2/run-2025-12-08T18-09-29-017Z/assets/img-12.png",
+    "relativePath": "./assets/img-12.png",
+    "type": "image",
+    "rect": {
+      "x": 3437,
+      "y": 308,
+      "width": 185,
+      "height": 131
+    },
+    "alt": "Shawarma Ji Ka Beta",
+    "isBackground": false
+  }
+]
